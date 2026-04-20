@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Energy Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f8fafc;
+      color: #111827;
+    }.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.bill {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.primary {
+  background: #1E40AF;
+  color: white;
+}
+
+.secondary {
+  background: #e5e7eb;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.grid button {
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.graph {
+  height: 120px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+  </style>
+</head>
+<body><div class="container">  <!-- Header -->  <div class="header">
+    <h2>⚡ Energy Dashboard</h2>
+    <span>🔔</span>
+  </div>  <!-- Bill Card -->  <div class="card">
+    <p>Current Bill</p>
+    <div class="bill">₱1,245</div>
+    <p>Due: April 20, 2026</p><div class="btn-group">
+  <button class="primary">Pay Now</button>
+  <button class="secondary">View Bill</button>
+</div>
+
+  </div>  <!-- Usage Card -->  <div class="card">
+    <p>Usage</p>
+    <h3>245 kWh</h3>
+    <p style="color:red;">↑ 12% from last month</p><div class="graph">📊 Graph</div>
+
+  </div>  <!-- Actions -->  <div class="grid">
+    <button>⚡ Usage</button>
+    <button>📄 Bills</button>
+    <button>⚠️ Outage</button>
+    <button>👤 Profile</button>
+  </div>  <!-- Notifications -->  <div class="card">
+    <h3>Notifications</h3>
+    <ul>
+      <li>⚠️ Bill due in 3 days</li>
+      <li>⚡ Usage increased by 20%</li>
+      <li>🔌 Scheduled outage April 10</li>
+    </ul>
+  </div></div></body>
+</html>
