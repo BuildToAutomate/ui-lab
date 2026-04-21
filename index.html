@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refrigeration Cycle Simulator</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --accent: #58a6ff; --red: #f85149; --blue: #79c0ff;
+    --yellow: #d29922; --green: #3fb950; --text: #e6edf3;
+    --muted: #8b949e; --card: #1c2128;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', monospace; min-height: 100vh; }
+  h1 { text-align: center; padding: 18px 0 4px; font-size: 1.25rem; letter-spacing: 1px; color: var(--accent); }
+  .subtitle { text-align: center; color: var(--muted); font-size: .78rem; margin-bottom: 14px; letter-spacing: 2px; text-transform: uppercase; }
+  .layout { display: grid; grid-template-columns: 260px 1fr 260px; gap: 14px; padding: 0 14px 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .panel h3 { font-size: .75rem; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  /* Controls */
+  .ctrl { margin-bottom: 14px; }
+  .ctrl label { display: flex; justify-content: space-between; font-size: .78rem; margin-bottom: 4px; }
+  .ctrl label span { color: var(--accent); font-weight: 700; }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  button { flex: 1; padding: 8px 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 6px; cursor: pointer; font-size: .8rem; transition: all .2s; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .fault-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .fault-btn { display: block; width: 100%; margin-bottom: 6px; flex: none; font-size: .73rem; padding: 6px; text-align: left; }
+  .fault-btn.on { background: #f85149; border-color: #f85149; color: #fff; }
+  /* Canvas */
+  #cvs { display: block; margin: 0 auto; }
+  .canvas-wrap { display: flex; align-items: center; justify-content: center; }
+  /* Equations */
+  .eq-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .78rem; }
+  .eq-row:last-child { border: none; }
+  .eq-name { color: var(--muted); }
+  .eq-val { color: var(--green); font-weight: 700; font-size: .88rem; }
+  .eq-formula { color: var(--accent); font-size: .68rem; margin-top: 2px; }
+  /* State badges */
+  .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .state-card { background: var(--card); border-radius: 6px; padding: 8px; border: 1px solid var(--border); }
+  .state-card .sc-title { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .state-card .sc-val { font-size: .9rem; font-weight: 700; margin-top: 2px; }
+  .state-card .sc-phase { font-size: .65rem; margin-top: 2px; }
+  /* Efficiency meter */
+  .eff-bar-wrap { margin-top: 10px; }
+  .eff-label { display: flex; justify-content: space-between; font-size: .75rem; margin-bottom: 4px; }
+  .eff-bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .eff-fill { height: 100%; border-radius: 5px; transition: width .4s; }
+  /* Stage highlight */
+  .stage-list { margin-top: 8px; }
+  .stage-item { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: .75rem; }
+  .stage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .stage-item.active-stage .stage-dot { box-shadow: 0 0 6px 2px currentColor; }
+  /* Fault badge */
+  #fault-badge { display: none; position: fixed; top: 14px; right: 14px; background: #f85149; color: #fff; padding: 6px 14px; border-radius: 20px; font-size: .75rem; font-weight: 700; z-index: 99; }
+</style>
+</head>
+<body>
+<div id="fault-badge">⚠ FAULT MODE ACTIVE</div>
+<h1>⚙ REFRIGERATION CYCLE SIMULATOR</h1>
+<p class="subtitle">Core HVAC Engine — Interactive Learning Tool</p>
+
+<div class="layout">
+  <!-- LEFT: Controls -->
+  <div>
+    <div class="panel">
+      <h3>System Controls</h3>
+      <div class="ctrl">
+        <label>Evaporator Temp <span id="v-tevap">-10</span>°C</label>
+        <input type="range" id="sl-tevap" min="-30" max="10" value="-10">
+      </div>
+      <div class="ctrl">
+        <label>Condenser Temp <span id="v-tcond">40</span>°C</label>
+        <input type="range" id="sl-tcond" min="25" max="70" value="40">
+      </div>
+      <div class="ctrl">
+        <label>Compressor Power <span id="v-wcomp">3.0</span> kW</label>
+        <input type="range" id="sl-wcomp" min="0.5" max="10" step="0.1" value="3.0">
+      </div>
+      <div class="ctrl">
+        <label>Pressure Ratio <span id="v-pr">4.0</span></label>
+        <input type="range" id="sl-pr" min="1.5" max="8" step="0.1" value="4.0">
+      </div>
+      <div class="btn-row">
+        <button id="btn-start" class="active" onclick="togglePlay()">▶ Start</button>
+        <button id="btn-pause" onclick="togglePause()">⏸ Pause</button>
+        <button onclick="resetSim()">🔁 Reset</button>
+      </div>
+      <div class="fault-section">
+        <div class="panel" style="padding:8px;background:var(--bg)">
+          <h3 style="margin-bottom:8px">⚠ Fault Simulation</h3>
+          <button class="fault-btn" id="f-lowcharge" onclick="toggleFault('lowcharge')">🔴 Low Refrigerant Charge</button>
+          <button class="fault-btn" id="f-overheat" onclick="toggleFault('overheat')">🟠 Overheating Compressor</button>
+          <button class="fault-btn" id="f-none" onclick="clearFaults()" style="display:none">✅ Clear Faults</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h3>Active Stage</h3>
+      <div class="stage-list" id="stage-list"></div>
+    </div>
+  </div>
+
+  <!-- CENTER: Canvas -->
+  <div class="panel canvas-wrap">
+    <canvas id="cvs" width="540" height="540"></canvas>
+  </div>
+
+  <!-- RIGHT: Equations + State -->
+  <div>
+    <div class="panel">
+      <h3>Live Thermodynamics</h3>
+      <div class="eq-row">
+        <div><div class="eq-name">COP</div><div class="eq-formula">Q_in / W_comp</div></div>
+        <div class="eq-val" id="eq-cop">—</div>
+      </div>
+      <div class="eq-row">
+        <div><div class="eq-name">Q_in (cooling)</div><div class="eq-formula">W × (COP)</div></div>
+        <div class="eq-val" id="eq-qin">—</div>
+      </div>
+      <div class="eq-row">
+        <div><div class="eq-name">Q_out (rejection)</div><div class="eq-formula">Q_in + W</div></div>
+        <div class="eq-val" id="eq-qout">—</div>
+      </div>
+      <div class="eq-row">
+        <div><div class="eq-name">W_compressor</div><div class="eq-formula">Input power</div></div>
+        <div class="eq-val" id="eq-w">—</div>
+      </div>
+      <div class="eq-row">
+        <div><div class="eq-name">P_high</div><div class="eq-formula">P_low × PR</div></div>
+        <div class="eq-val" id="eq-ph">—</div>
+      </div>
+      <div class="eq-row">
+        <div><div class="eq-name">P_low</div><div class="eq-formula">T_evap model</div></div>
+        <div class="eq-val" id="eq-pl">—</div>
+      </div>
+      <div class="eff-bar-wrap">
+        <div class="eff-label"><span>Cycle Efficiency vs Ideal (Carnot)</span><span id="eff-pct">—</span></div>
+        <div class="eff-bar"><div class="eff-fill" id="eff-fill" style="width:0%;background:var(--green)"></div></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h3>Refrigerant State Points</h3>
+      <div class="state-grid" id="state-grid"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h3>Energy Legend</h3>
+      <div style="font-size:.75rem;line-height:2">
+        <div>🔴 <span style="color:#f85149">Red arrows</span> — Heat Rejected (Q_out)</div>
+        <div>🔵 <span style="color:#79c0ff">Blue arrows</span> — Heat Absorbed (Q_in)</div>
+        <div>🟡 <span style="color:#d29922">Yellow arrows</span> — Work Input (W)</div>
+        <div style="margin-top:8px;color:var(--muted)">Refrigerant flows clockwise through the cycle.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const W = cvs.width, H = cvs.height;
+const CX = W/2, CY = H/2;
+
+let running = true, paused = false;
+let animT = 0, frameId = null;
+let fault = null;
+
+// Component centers (circular layout)
+const COMP  = {x: CX,       y: CY - 175, label: 'COMPRESSOR',      color: '#d29922'};
+const COND  = {x: CX + 175, y: CY,       label: 'CONDENSER',       color: '#f85149'};
+const EXV   = {x: CX,       y: CY + 175, label: 'EXPANSION\nVALVE', color: '#8b949e'};
+const EVAP  = {x: CX - 175, y: CY,       label: 'EVAPORATOR',      color: '#79c0ff'};
+
+const COMPS = [COMP, COND, EXV, EVAP];
+const STAGE_NAMES = ['Compression','Condensation','Expansion','Evaporation'];
+const STAGE_COLORS = ['#d29922','#f85149','#8b949e','#79c0ff'];
+
+// Sliders
+const sliders = {
+  tevap: {el: document.getElementById('sl-tevap'), val: -10},
+  tcond: {el: document.getElementById('sl-tcond'), val: 40},
+  wcomp: {el: document.getElementById('sl-wcomp'), val: 3.0},
+  pr:    {el: document.getElementById('sl-pr'),    val: 4.0},
+};
+
+function getVals() {
+  let v = {};
+  for (let k in sliders) {
+    v[k] = parseFloat(sliders[k].el.value);
+    document.getElementById('v-'+k).textContent = v[k].toFixed(k==='wcomp'?1:0);
+  }
+  // Fault overrides
+  if (fault === 'lowcharge') { v.wcomp *= 0.6; v.tevap -= 5; }
+  if (fault === 'overheat')  { v.wcomp *= 1.4; v.tcond += 12; }
+  return v;
+}
+
+function calcThermo(v) {
+  const T_evap_K = v.tevap + 273.15;
+  const T_cond_K = v.tcond + 273.15;
+  const COP_carnot = T_evap_K / (T_cond_K - T_evap_K);
+  const COP = Math.max(0.5, COP_carnot * (fault === 'overheat' ? 0.55 : fault === 'lowcharge' ? 0.65 : 0.75));
+  const Q_in  = v.wcomp * COP;
+  const Q_out = Q_in + v.wcomp;
+  const P_low = Math.max(50, 100 + (v.tevap + 30) * 6);
+  const P_high = P_low * v.pr;
+  const eff = Math.min(100, (COP / COP_carnot) * 100);
+  return {COP, Q_in, Q_out, P_low, P_high, COP_carnot, eff};
+}
+
+function updateUI(v, t) {
+  document.getElementById('eq-cop').textContent  = t.COP.toFixed(2);
+  document.getElementById('eq-qin').textContent  = t.Q_in.toFixed(2)+' kW';
+  document.getElementById('eq-qout').textContent = t.Q_out.toFixed(2)+' kW';
+  document.getElementById('eq-w').textContent    = v.wcomp.toFixed(2)+' kW';
+  document.getElementById('eq-ph').textContent   = t.P_high.toFixed(0)+' kPa';
+  document.getElementById('eq-pl').textContent   = t.P_low.toFixed(0)+' kPa';
+  document.getElementById('eff-pct').textContent = t.eff.toFixed(0)+'%';
+  const fill = document.getElementById('eff-fill');
+  fill.style.width = t.eff+'%';
+  fill.style.background = t.eff > 70 ? '#3fb950' : t.eff > 45 ? '#d29922' : '#f85149';
+
+  // State points
+  const states = [
+    {label:'Point 1 (Evap Out)', T: v.tevap, P: t.P_low,  phase:'Saturated Vapor', col:'#79c0ff'},
+    {label:'Point 2 (Comp Out)', T: v.tcond+15, P: t.P_high, phase:'Superheated Vapor', col:'#d29922'},
+    {label:'Point 3 (Cond Out)', T: v.tcond, P: t.P_high, phase:'Saturated Liquid', col:'#f85149'},
+    {label:'Point 4 (EXV Out)', T: v.tevap+2, P: t.P_low,  phase:'Two-Phase Mix', col:'#8b949e'},
+  ];
+  const sg = document.getElementById('state-grid');
+  sg.innerHTML = states.map(s=>`
+    <div class="state-card">
+      <div class="sc-title">${s.label}</div>
+      <div class="sc-val" style="color:${s.col}">${s.T.toFixed(1)}°C</div>
+      <div class="sc-phase" style="color:${s.col}">${s.phase}</div>
+    </div>`).join('');
+
+  // Stage list
+  const stageIdx = Math.floor(((animT % 1) * 4));
+  const sl = document.getElementById('stage-list');
+  sl.innerHTML = STAGE_NAMES.map((n,i)=>`
+    <div class="stage-item ${i===stageIdx?'active-stage':''}">
+      <div class="stage-dot" style="background:${STAGE_COLORS[i]};color:${STAGE_COLORS[i]}"></div>
+      <div>${i+1}. ${n}</div>
+      ${i===stageIdx?'<div style="margin-left:auto;color:'+STAGE_COLORS[i]+';font-weight:700">●</div>':''}
+    </div>`).join('');
+}
+
+// ─── DRAWING ────────────────────────────────────────────────────────────────
+
+function drawBg() {
+  ctx.fillStyle = '#161b22';
+  ctx.fillRect(0, 0, W, H);
+  // Grid
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+}
+
+function drawPipe(x1,y1,x2,y2, color, w=3) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = w;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+}
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function ptOnPipe(seg, t) {
+  // seg: array of {x,y} waypoints; t in [0,1]
+  const n = seg.length - 1;
+  const ti = Math.min(n - 0.001, t * n);
+  const i = Math.floor(ti);
+  const f = ti - i;
+  return { x: lerp(seg[i].x, seg[i+1].x, f), y: lerp(seg[i].y, seg[i+1].y, f) };
+}
+
+// Pipe paths (segments between components)
+const R = 175;
+const pipes = [
+  // 0: Compressor → Condenser (top → right, high-P vapor)
+  [{x:CX, y:CY-155}, {x:CX+100, y:CY-155}, {x:CX+155, y:CY-80}, {x:CX+155, y:CY-20}],
+  // 1: Condenser → EXV (right → bottom, high-P liquid)
+  [{x:CX+155, y:CY+20}, {x:CX+155, y:CY+80}, {x:CX+100, y:CY+155}, {x:CX, y:CY+155}],
+  // 2: EXV → Evaporator (bottom → left, low-P mix)
+  [{x:CX, y:CY+155}, {x:CX-100, y:CY+155}, {x:CX-155, y:CY+80}, {x:CX-155, y:CY+20}],
+  // 3: Evaporator → Compressor (left → top, low-P vapor)
+  [{x:CX-155, y:CY-20}, {x:CX-155, y:CY-80}, {x:CX-100, y:CY-155}, {x:CX, y:CY-155}],
+];
+
+const pipeColors = ['#d29922','#f85149','#8b949e','#79c0ff'];
+const pipeLabels = ['High-P Vapor','High-P Liquid','Two-Phase Mix','Low-P Vapor'];
+
+function drawPipes() {
+  pipes.forEach((seg, i) => {
+    ctx.strokeStyle = pipeColors[i];
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(seg[0].x, seg[0].y);
+    for (let j=1; j<seg.length; j++) ctx.lineTo(seg[j].x, seg[j].y);
+    ctx.stroke();
+  });
+}
+
+function drawParticle(pipeIdx, t, color, radius=5) {
+  const seg = pipes[pipeIdx];
+  const pos = ptOnPipe(seg, t % 1);
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, radius, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  // glow
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, radius, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawComponent(c, active, idx) {
+  const sz = 48;
+  // Glow if active
+  if (active) {
+    ctx.shadowColor = c.color;
+    ctx.shadowBlur = 24;
+  }
+  // Box
+  ctx.fillStyle = active ? c.color+'33' : '#1c2128';
+  ctx.strokeStyle = active ? c.color : '#30363d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  roundRect(ctx, c.x-sz, c.y-sz, sz*2, sz*2, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Icon
+  ctx.fillStyle = c.color;
+  ctx.font = `bold 22px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const icons = ['⚙','♨','⬇','❄'];
+  ctx.fillText(icons[idx], c.x, c.y - 8);
+
+  // Label
+  ctx.fillStyle = active ? c.color : '#8b949e';
+  ctx.font = `bold 9.5px 'Segoe UI'`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines = c.label.split('\n');
+  lines.forEach((l, li) => ctx.fillText(l, c.x, c.y + 14 + li*11));
+
+  // Stage index
+  ctx.fillStyle = '#30363d';
+  ctx.font = `10px monospace`;
+  ctx.fillText(`0${idx+1}`, c.x - sz + 10, c.y - sz + 12);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+}
+
+function drawEnergyArrow(ox, oy, dx, dy, color, label, pulse) {
+  const alpha = 0.5 + 0.5*Math.sin(pulse);
+  ctx.globalAlpha = 0.3 + 0.7*alpha;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  const len = 32, hw = 7;
+  const angle = Math.atan2(dy, dx);
+  const ex = ox + Math.cos(angle)*len, ey = oy + Math.sin(angle)*len;
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hw*Math.cos(angle-0.4), ey - hw*Math.sin(angle-0.4));
+  ctx.lineTo(ex - hw*Math.cos(angle+0.4), ey - hw*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fill();
+  // Label
+  ctx.font = '9px Segoe UI';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, ex + Math.cos(angle)*18, ey + Math.sin(angle)*18);
+  ctx.globalAlpha = 1;
+}
+
+function drawCenter(v, t) {
+  // COP in center
+  ctx.fillStyle = '#3fb950';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`COP = ${t.COP.toFixed(2)}`, CX, CY - 12);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '9px Segoe UI';
+  ctx.fillText('Q_in + W = Q_out', CX, CY + 4);
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = '9px monospace';
+  ctx.fillText(`${t.Q_in.toFixed(1)} + ${v.wcomp.toFixed(1)} = ${t.Q_out.toFixed(1)} kW`, CX, CY + 18);
+  // Fault indicator
+  if (fault) {
+    ctx.fillStyle = '#f85149';
+    ctx.font = 'bold 9px Segoe UI';
+    ctx.fillText('⚠ FAULT ACTIVE', CX, CY + 32);
+  }
+}
+
+function drawFrame() {
+  const v = getVals();
+  const t = calcThermo(v);
+  drawBg();
+  drawPipes();
+
+  // Determine active stage (0-3)
+  const cycleT = animT % 1;
+  const activeStage = paused ? -1 : Math.floor(cycleT * 4);
+
+  // Energy arrows
+  const p = animT * 5;
+  drawEnergyArrow(COMP.x, COMP.y - 48, 0, -1, '#d29922', 'W_in', p);
+  drawEnergyArrow(COND.x + 48, COND.y, 1, 0, '#f85149', 'Q_out', p+1);
+  drawEnergyArrow(EVAP.x - 48, EVAP.y, -1, 0, '#79c0ff', 'Q_in', p+2);
+
+  // Particles (multiple per pipe)
+  if (!paused) {
+    for (let i = 0; i < 4; i++) {
+      const offset = (cycleT + i * 0.25) % 1;
+      const pipeIdx = i;
+      drawParticle(pipeIdx, offset, pipeColors[i], 5);
+      drawParticle(pipeIdx, (offset + 0.5) % 1, pipeColors[i], 3.5);
+    }
+  }
+
+  // Components
+  COMPS.forEach((c, i) => drawComponent(c, i === activeStage, i));
+
+  drawCenter(v, t);
+  updateUI(v, t);
+
+  if (!paused) animT += 0.004;
+}
+
+function loop() {
+  drawFrame();
+  frameId = requestAnimationFrame(loop);
+}
+
+function togglePlay() {
+  running = true; paused = false;
+  document.getElementById('btn-start').classList.add('active');
+}
+function togglePause() {
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? '▶ Resume' : '⏸ Pause';
+}
+function resetSim() {
+  animT = 0; paused = false;
+  for (let k in sliders) sliders[k].el.value = {tevap:-10,tcond:40,wcomp:3.0,pr:4.0}[k];
+  clearFaults();
+  document.getElementById('btn-pause').textContent = '⏸ Pause';
+}
+
+function toggleFault(f) {
+  fault = fault === f ? null : f;
+  document.getElementById('f-lowcharge').classList.toggle('on', fault==='lowcharge');
+  document.getElementById('f-overheat').classList.toggle('on', fault==='overheat');
+  document.getElementById('f-none').style.display = fault ? 'block' : 'none';
+  document.getElementById('fault-badge').style.display = fault ? 'block' : 'none';
+}
+function clearFaults() {
+  fault = null;
+  document.getElementById('f-lowcharge').classList.remove('on');
+  document.getElementById('f-overheat').classList.remove('on');
+  document.getElementById('f-none').style.display = 'none';
+  document.getElementById('fault-badge').style.display = 'none';
+}
+
+loop();
+</script>
+</body>
+</html>
