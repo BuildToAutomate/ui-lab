@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydrogen Atom Orbital Viewer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050a14;color:#e0eaff;font-family:'Segoe UI',sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+#header{padding:10px 20px;background:rgba(0,20,60,.7);border-bottom:1px solid #1a3a6a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#header h1{font-size:1.1rem;color:#7eb8ff;letter-spacing:1px}
+#header span{font-size:.7rem;color:#4a7aaa;font-style:italic}
+#main{display:flex;flex:1;overflow:hidden}
+#canvas-area{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#side-panel{width:260px;background:rgba(0,15,45,.85);border-left:1px solid #1a3a6a;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+#controls{padding:14px}
+.ctrl-label{font-size:.65rem;color:#4a8acc;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:12px}
+.orbital-btns{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.orb-btn{padding:7px 4px;border:1px solid #1a4a8a;background:rgba(20,50,120,.3);color:#7eb8ff;font-size:.72rem;border-radius:5px;cursor:pointer;transition:.2s;text-align:center}
+.orb-btn:hover{background:rgba(40,90,200,.4);border-color:#4a8aff}
+.orb-btn.active{background:rgba(60,120,255,.35);border-color:#6aafff;color:#fff;font-weight:600}
+.slider-row{display:flex;align-items:center;gap:8px}
+input[type=range]{-webkit-appearance:none;flex:1;height:4px;background:#1a3a6a;border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:#5a9fff;border-radius:50%;cursor:pointer}
+.slider-val{font-size:.8rem;color:#7eb8ff;width:20px;text-align:center}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin:5px 0}
+.toggle-row label{font-size:.75rem;color:#8ab8e0}
+.toggle{position:relative;width:34px;height:18px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#1a3a6a;border-radius:18px;transition:.2s}
+.toggle .slider:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:#4a7aaa;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:#1a5aff}
+.toggle input:checked+.slider:before{transform:translateX(16px);background:#fff}
+#info-panel{padding:14px;border-top:1px solid #1a3a6a}
+.info-title{font-size:.75rem;color:#5aaaff;font-weight:700;margin-bottom:6px}
+.info-text{font-size:.7rem;color:#8ab0d8;line-height:1.6}
+.quantum-note{background:rgba(30,80,200,.15);border:1px solid #1a4a8a;border-radius:6px;padding:8px;margin-top:8px;font-size:.68rem;color:#6a9aee;line-height:1.5;font-style:italic}
+#bottom{padding:10px 20px;background:rgba(0,15,45,.8);border-top:1px solid #1a3a6a;font-size:.65rem;color:#3a6a9a;text-align:center;flex-shrink:0}
+#tooltip{position:absolute;top:10px;left:10px;background:rgba(0,20,60,.8);border:1px solid #1a4a8a;border-radius:6px;padding:8px 12px;font-size:.7rem;color:#7eb8ff;pointer-events:none}
+.compare-btn{width:100%;padding:8px;background:rgba(40,80,160,.3);border:1px solid #2a5aaa;color:#7eb8ff;border-radius:5px;cursor:pointer;font-size:.72rem;margin-top:8px;transition:.2s}
+.compare-btn:hover{background:rgba(60,110,220,.4)}
+.compare-btn.active{background:rgba(60,110,220,.45);border-color:#5a9fff;color:#fff}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#050a14;z-index:10;font-size:.9rem;color:#5a9fff;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>⚛ Hydrogen Atom Orbital Viewer</h1>
+  <span>Quantum Probability Cloud Visualization</span>
+</div>
+
+<div id="main">
+  <div id="canvas-area">
+    <canvas id="c"></canvas>
+    <div id="tooltip">Drag to rotate · Scroll to zoom</div>
+    <div id="loading">Initializing quantum simulation…</div>
+  </div>
+
+  <div id="side-panel">
+    <div id="controls">
+      <div class="ctrl-label">Orbital Type</div>
+      <div class="orbital-btns">
+        <button class="orb-btn active" data-orb="1s">1s</button>
+        <button class="orb-btn" data-orb="2s">2s</button>
+        <button class="orb-btn" data-orb="2px">2px</button>
+        <button class="orb-btn" data-orb="2py">2py</button>
+        <button class="orb-btn" data-orb="2pz">2pz</button>
+        <button class="orb-btn" data-orb="3dz2">3dz²</button>
+        <button class="orb-btn" data-orb="3dxy">3dxy</button>
+        <button class="orb-btn" data-orb="3dx2">3dx²y²</button>
+      </div>
+
+      <button class="compare-btn" id="compareBtn">⊞ Compare s / p / d Mode</button>
+
+      <div class="ctrl-label">Particle Density</div>
+      <div class="slider-row">
+        <input type="range" id="densSlider" min="500" max="6000" value="2500" step="100">
+        <span class="slider-val" id="densVal">2500</span>
+      </div>
+
+      <div class="ctrl-label">Point Size</div>
+      <div class="slider-row">
+        <input type="range" id="sizeSlider" min="1" max="8" value="3" step="0.5">
+        <span class="slider-val" id="sizeVal">3</span>
+      </div>
+
+      <div class="ctrl-label">Display Options</div>
+      <div class="toggle-row">
+        <label>Show Nucleus</label>
+        <label class="toggle"><input type="checkbox" id="togNucleus" checked><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label>Show Axes</label>
+        <label class="toggle"><input type="checkbox" id="togAxes" checked><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <label>Animate Cloud</label>
+        <label class="toggle"><input type="checkbox" id="togAnim" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div id="info-panel">
+      <div class="info-title" id="infoTitle">1s Orbital</div>
+      <div class="info-text" id="infoText">Spherically symmetric around the nucleus. The electron has the highest probability of being found near the center. No angular nodes.</div>
+      <div class="quantum-note">n=1, ℓ=0, mℓ=0 · Lowest energy state · Ground state</div>
+      <div class="quantum-note" style="margin-top:6px;font-style:normal;color:#5ae8aa">
+        ℹ️ What you are seeing is a <strong>probability map</strong>, not a physical path. Electrons do not orbit like planets — they exist as waves spread across space.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="bottom">
+  Students will understand: Electrons are not particles in fixed orbits · Orbitals are probability distributions · Quantum mechanics replaces classical orbit theory
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const INFO = {
+  '1s':{title:'1s Orbital',text:'Spherically symmetric around the nucleus. Highest electron probability near the nucleus. Ground state — lowest energy.',note:'n=1, ℓ=0, mℓ=0 · Spherical symmetry · No angular nodes'},
+  '2s':{title:'2s Orbital',text:'Larger sphere than 1s with a spherical nodal surface (zero probability shell) inside. Second energy level.',note:'n=2, ℓ=0, mℓ=0 · 1 radial node · Larger than 1s'},
+  '2px':{title:'2px Orbital',text:'Dumbbell-shaped along the X axis. A planar node passes through the nucleus. Lobes represent opposite phases.',note:'n=2, ℓ=1, mℓ=±1 · 1 angular node (yz-plane)'},
+  '2py':{title:'2py Orbital',text:'Dumbbell-shaped along the Y axis. Same shape as px/pz, rotated 90°.',note:'n=2, ℓ=1, mℓ=±1 · 1 angular node (xz-plane)'},
+  '2pz':{title:'2pz Orbital',text:'Dumbbell-shaped along the Z axis. The nodal plane bisects the two lobes at the nucleus.',note:'n=2, ℓ=1, mℓ=0 · 1 angular node (xy-plane)'},
+  '3dz2':{title:'3dz² Orbital',text:'Double-lobe along Z axis with a toroidal ring around the middle. Complex angular shape with 2 angular nodes.',note:'n=3, ℓ=2, mℓ=0 · 2 angular nodes · Higher energy'},
+  '3dxy':{title:'3dxy Orbital',text:'Four-lobed clover pattern in the XY plane, rotated 45° from dx²−y². High angular momentum state.',note:'n=3, ℓ=2, mℓ=±1 · 2 angular nodes · xy-plane'},
+  '3dx2':{title:'3dx²−y² Orbital',text:'Four-lobed clover pattern aligned along X and Y axes. One of five degenerate d orbitals.',note:'n=3, ℓ=2, mℓ=±2 · 2 angular nodes · Aligned with axes'},
+};
+
+// Wavefunction probability densities (|ψ|² proportional)
+const ORBITALS = {
+  '1s':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return Math.exp(-2*r)*4},
+  '2s':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return Math.pow(2-r,2)*Math.exp(-r)*0.8},
+  '2px':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return x*x*Math.exp(-r)*2.5},
+  '2py':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return y*y*Math.exp(-r)*2.5},
+  '2pz':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return z*z*Math.exp(-r)*2.5},
+  '3dz2':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);const v=2*z*z-x*x-y*y;return v*v*Math.exp(-2*r/3)*1.2},
+  '3dxy':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);return x*x*y*y*Math.exp(-2*r/3)*5},
+  '3dx2':(x,y,z)=>{const r=Math.sqrt(x*x+y*y+z*z);const v=x*x-y*y;return v*v*Math.exp(-2*r/3)*5},
+};
+
+// Sampling range per orbital
+const RANGE={'1s':3,'2s':6,'2px':6,'2py':6,'2pz':6,'3dz2':9,'3dxy':9,'3dx2':9};
+
+// Three.js setup
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x050a14);
+
+const camera=new THREE.PerspectiveCamera(60,1,.1,1000);
+camera.position.set(0,0,12);
+
+// Resize
+function resize(){
+  const a=canvas.parentElement;
+  renderer.setSize(a.clientWidth,a.clientHeight);
+  camera.aspect=a.clientWidth/a.clientHeight;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize',resize);
+
+// Orbit control (manual)
+let drag=false,lx=0,ly=0,rotX=0.4,rotY=0;
+const pivot=new THREE.Object3D();
+scene.add(pivot);
+
+canvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY});
+canvas.addEventListener('touchstart',e=>{drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY},{passive:true});
+window.addEventListener('mouseup',()=>drag=false);
+window.addEventListener('touchend',()=>drag=false);
+window.addEventListener('mousemove',e=>{if(!drag)return;rotY+=(e.clientX-lx)*.008;rotX+=(e.clientY-ly)*.008;lx=e.clientX;ly=e.clientY});
+window.addEventListener('touchmove',e=>{if(!drag)return;rotY+=(e.touches[0].clientX-lx)*.008;rotX+=(e.touches[0].clientY-ly)*.008;lx=e.touches[0].clientX;ly=e.touches[0].clientY},{passive:true});
+canvas.addEventListener('wheel',e=>{camera.position.z=Math.max(4,Math.min(25,camera.position.z+e.deltaY*.02))});
+
+// Axes
+const axisGroup=new THREE.Group();
+const mkAxis=(dir,color)=>{
+  const mat=new THREE.LineBasicMaterial({color});
+  const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...dir.map(v=>-v*4)),new THREE.Vector3(...dir.map(v=>v*4))]);
+  axisGroup.add(new THREE.Line(geo,mat));
+  // Label sprite
+  const canvas2=document.createElement('canvas');canvas2.width=64;canvas2.height=64;
+  const ctx=canvas2.getContext('2d');ctx.fillStyle='#fff';ctx.font='bold 40px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(dir[0]?'X':dir[1]?'Y':'Z',32,32);
+  const tex=new THREE.CanvasTexture(canvas2);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color}));
+  sp.scale.set(.8,.8,.8);
+  sp.position.set(...dir.map(v=>v*4.5));
+  axisGroup.add(sp);
+};
+mkAxis([1,0,0],0xff4444);mkAxis([0,1,0],0x44ff88);mkAxis([0,0,1],0x4488ff);
+pivot.add(axisGroup);
+
+// Nucleus
+const nucGeo=new THREE.SphereGeometry(.18,16,16);
+const nucMat=new THREE.MeshBasicMaterial({color:0xff6633});
+const nucleus=new THREE.Mesh(nucGeo,nucMat);
+// Glow
+const glowGeo=new THREE.SphereGeometry(.4,16,16);
+const glowMat=new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:.18,side:THREE.BackSide});
+nucleus.add(new THREE.Mesh(glowGeo,glowMat));
+pivot.add(nucleus);
+
+// Particle cloud
+let cloudPoints=null;
+let compareMode=false;
+let compareClouds=[];
+
+function buildCloud(orbKey,count,scale=1,offset=[0,0,0]){
+  const fn=ORBITALS[orbKey];
+  const rng=RANGE[orbKey]||6;
+  const positions=new Float32Array(count*3);
+  const colors=new Float32Array(count*3);
+  let idx=0;
+  const attempts=count*40;
+  let placed=0;
+  for(let i=0;i<attempts&&placed<count;i++){
+    const x=(Math.random()*2-1)*rng;
+    const y=(Math.random()*2-1)*rng;
+    const z=(Math.random()*2-1)*rng;
+    const p=fn(x,y,z);
+    if(Math.random()<Math.min(p/4,1)){
+      positions[idx++]=(x+offset[0])*scale;
+      positions[idx++]=(y+offset[1])*scale;
+      positions[idx++]=(z+offset[2])*scale;
+      // Color by density (blue→cyan→white)
+      const t=Math.min(p/3,1);
+      colors[idx-3+0]=t*t;
+      colors[idx-3+1]=t*.6+.4;
+      colors[idx-3+2]=1;
+      placed++;
+    }
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(positions.slice(0,placed*3),3));
+  geo.setAttribute('color',new THREE.BufferAttribute(colors.slice(0,placed*3),3));
+  const mat=new THREE.PointsMaterial({size:parseFloat(document.getElementById('sizeSlider').value)*0.035,vertexColors:true,transparent:true,opacity:.75,sizeAttenuation:true,depthWrite:false});
+  return new THREE.Points(geo,mat);
+}
+
+const COMPARE_KEYS=['1s','2pz','3dxy'];
+const COMPARE_OFFSETS=[[-8,0,0],[0,0,0],[8,0,0]];
+const COMPARE_COLORS=[0x4488ff,0x44ffaa,0xff8844];
+
+function buildCompare(count){
+  const groups=[];
+  COMPARE_KEYS.forEach((k,i)=>{
+    const cloud=buildCloud(k,Math.floor(count/3),0.45,COMPARE_OFFSETS[i]);
+    // Tint differently
+    const arr=cloud.geometry.attributes.color.array;
+    const [cr,cg,cb]=[(COMPARE_COLORS[i]>>16&255)/255,(COMPARE_COLORS[i]>>8&255)/255,(COMPARE_COLORS[i]&255)/255];
+    for(let j=0;j<arr.length;j+=3){arr[j]*=cr+.3;arr[j+1]*=cg+.3;arr[j+2]*=cb+.3;}
+    cloud.geometry.attributes.color.needsUpdate=true;
+    pivot.add(cloud);
+    groups.push(cloud);
+  });
+  return groups;
+}
+
+function clearCloud(){
+  if(cloudPoints){pivot.remove(cloudPoints);cloudPoints.geometry.dispose();cloudPoints.material.dispose();cloudPoints=null;}
+  compareClouds.forEach(c=>{pivot.remove(c);c.geometry.dispose();c.material.dispose();});
+  compareClouds=[];
+}
+
+let currentOrb='1s';
+
+function loadOrb(key){
+  clearCloud();
+  compareMode=false;
+  document.getElementById('compareBtn').classList.remove('active');
+  nucleus.position.set(0,0,0);
+  nucleus.visible=document.getElementById('togNucleus').checked;
+  currentOrb=key;
+  const count=parseInt(document.getElementById('densSlider').value);
+  cloudPoints=buildCloud(key,count);
+  pivot.add(cloudPoints);
+  const info=INFO[key];
+  document.getElementById('infoTitle').textContent=info.title;
+  document.getElementById('infoText').textContent=info.text;
+  document.querySelector('.quantum-note').textContent=info.note;
+  document.querySelectorAll('.orb-btn').forEach(b=>b.classList.toggle('active',b.dataset.orb===key));
+}
+
+function loadCompare(){
+  clearCloud();
+  compareMode=true;
+  document.getElementById('compareBtn').classList.add('active');
+  nucleus.visible=false;
+  document.querySelectorAll('.orb-btn').forEach(b=>b.classList.remove('active'));
+  const count=parseInt(document.getElementById('densSlider').value);
+  compareClouds=buildCompare(count);
+  document.getElementById('infoTitle').textContent='Compare Mode: s / p / d';
+  document.getElementById('infoText').textContent='Left: 1s (spherical) · Center: 2pz (dumbbell) · Right: 3dxy (clover). Each cloud shows electron probability in 3D space.';
+  document.querySelector('.quantum-note').textContent='Three orbital types side-by-side — note how shape depends on angular momentum quantum number ℓ';
+}
+
+// Events
+document.querySelectorAll('.orb-btn').forEach(b=>b.addEventListener('click',()=>loadOrb(b.dataset.orb)));
+document.getElementById('compareBtn').addEventListener('click',()=>{compareMode?loadOrb(currentOrb):loadCompare()});
+
+document.getElementById('densSlider').addEventListener('input',function(){
+  document.getElementById('densVal').textContent=this.value;
+  compareMode?loadCompare():loadOrb(currentOrb);
+});
+document.getElementById('sizeSlider').addEventListener('input',function(){
+  document.getElementById('sizeVal').textContent=this.value;
+  const s=parseFloat(this.value)*0.035;
+  if(cloudPoints)cloudPoints.material.size=s;
+  compareClouds.forEach(c=>c.material.size=s);
+});
+document.getElementById('togNucleus').addEventListener('change',function(){nucleus.visible=this.checked&&!compareMode});
+document.getElementById('togAxes').addEventListener('change',function(){axisGroup.visible=this.checked});
+
+// Init
+loadOrb('1s');
+document.getElementById('loading').style.display='none';
+
+// Render loop
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  t+=0.005;
+  if(document.getElementById('togAnim').checked){
+    if(cloudPoints)cloudPoints.rotation.y=Math.sin(t*.3)*.015;
+  }
+  pivot.rotation.x=rotX;
+  pivot.rotation.y=rotY;
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
