@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magnetic Field Visualizer</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --accent: #58a6ff; --north: #ff4d4d; --south: #4d9fff;
+    --text: #e6edf3; --muted: #8b949e; --green: #3fb950;
+    --wire: #ffd700; --slider-thumb: #58a6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  header { padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1rem; font-weight: 600; color: var(--accent); }
+  .badge { font-size: 0.7rem; background: #21262d; border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; color: var(--muted); }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Canvas area ── */
+  .canvas-wrap { position: relative; flex: 1; background: #090d13; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .canvas-overlay { position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; }
+  .pill { background: rgba(22,27,34,.85); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.72rem; color: var(--muted); backdrop-filter: blur(4px); }
+
+  /* ── Controls sidebar ── */
+  .sidebar { width: 270px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+  .section { border-bottom: 1px solid var(--border); padding: 14px 16px; }
+  .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  .ctrl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .ctrl-label { font-size: 0.78rem; color: var(--text); }
+  .ctrl-val { font-size: 0.72rem; color: var(--accent); min-width: 32px; text-align: right; }
+
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #21262d; outline: none; cursor: pointer; margin: 4px 0 10px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--slider-thumb); border: 2px solid var(--bg); }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .toggle { position: relative; width: 38px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider-track { position: absolute; inset: 0; background: #21262d; border-radius: 20px; cursor: pointer; transition: .3s; }
+  .slider-track:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+  input:checked + .slider-track { background: var(--accent); }
+  input:checked + .slider-track:before { transform: translateX(18px); }
+
+  .dir-btn-group { display: flex; gap: 6px; margin-top: 4px; }
+  .dir-btn { flex: 1; padding: 5px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; color: var(--muted); font-size: 0.72rem; cursor: pointer; transition: all .2s; text-align: center; }
+  .dir-btn.active { border-color: var(--wire); color: var(--wire); background: rgba(255,215,0,.08); }
+
+  .action-btns { display: flex; gap: 6px; padding: 12px 16px; }
+  .btn { flex: 1; padding: 7px; border-radius: 7px; border: 1px solid var(--border); background: #21262d; color: var(--text); font-size: 0.75rem; cursor: pointer; transition: all .2s; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { opacity: .85; }
+
+  /* ── Explanation panel ── */
+  .explain { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .explain-title { font-size: 0.7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .explain-card { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.55; color: var(--text); transition: all .4s; }
+  .explain-card .card-icon { font-size: 1rem; margin-bottom: 4px; }
+  .explain-card .card-head { font-weight: 600; color: var(--accent); margin-bottom: 4px; font-size: 0.78rem; }
+  .explain-card.highlight { border-color: var(--accent); background: rgba(88,166,255,.06); }
+
+  /* ── Tooltip ── */
+  #tooltip { position: fixed; background: rgba(22,27,34,.95); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.72rem; color: var(--text); pointer-events: none; display: none; z-index: 99; backdrop-filter: blur(6px); max-width: 180px; line-height: 1.4; }
+
+  /* ── Mode badge ── */
+  .mode-pill { background: rgba(63,185,80,.12); border: 1px solid var(--green); color: var(--green); border-radius: 12px; padding: 2px 10px; font-size: 0.68rem; cursor: pointer; transition: all .2s; user-select: none; }
+  .mode-pill:hover { background: rgba(63,185,80,.2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>⚡</div>
+  <h1>Magnetic Field Visualizer</h1>
+  <div class="badge">Physics Lab</div>
+  <div style="flex:1"></div>
+  <div class="mode-pill" id="modeToggle">Simple Mode</div>
+</header>
+
+<div class="main">
+  <!-- Canvas -->
+  <div class="canvas-wrap">
+    <canvas id="c"></canvas>
+    <div class="canvas-overlay">
+      <div class="pill" id="statusPill">🧲 Drag the magnet to explore</div>
+      <div class="pill" id="fpsCounter">60 fps</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Bar Magnet controls -->
+    <div class="section">
+      <div class="section-title">🧲 Bar Magnet</div>
+      <div class="toggle-row">
+        <span class="ctrl-label">Show Magnet</span>
+        <label class="toggle"><input type="checkbox" id="toggleMagnet" checked><span class="slider-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="ctrl-label">N/S Labels</span>
+        <label class="toggle"><input type="checkbox" id="toggleLabels" checked><span class="slider-track"></span></label>
+      </div>
+      <div class="ctrl-row"><span class="ctrl-label">Strength</span><span class="ctrl-val" id="magStrVal">60</span></div>
+      <input type="range" id="magStrength" min="10" max="120" value="60">
+      <div class="ctrl-row"><span class="ctrl-label">Rotation</span><span class="ctrl-val" id="magRotVal">0°</span></div>
+      <input type="range" id="magRotation" min="-180" max="180" value="0">
+    </div>
+
+    <!-- Wire controls -->
+    <div class="section">
+      <div class="section-title">⚡ Current Wire</div>
+      <div class="toggle-row">
+        <span class="ctrl-label">Wire Active</span>
+        <label class="toggle"><input type="checkbox" id="toggleWire"><span class="slider-track"></span></label>
+      </div>
+      <div class="ctrl-row"><span class="ctrl-label">Current Intensity</span><span class="ctrl-val" id="wireStrVal">40</span></div>
+      <input type="range" id="wireStrength" min="5" max="100" value="40">
+      <div class="ctrl-label" style="font-size:.72rem;color:var(--muted);margin-bottom:4px;">Field Direction</div>
+      <div class="dir-btn-group">
+        <div class="dir-btn active" id="dirOut" onclick="setWireDir('out')">⊙ Out of Page</div>
+        <div class="dir-btn" id="dirIn" onclick="setWireDir('in')">⊗ Into Page</div>
+      </div>
+    </div>
+
+    <!-- Visualization controls -->
+    <div class="section">
+      <div class="section-title">🎨 Visualization</div>
+      <div class="toggle-row">
+        <span class="ctrl-label">Field Lines</span>
+        <label class="toggle"><input type="checkbox" id="toggleLines" checked><span class="slider-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="ctrl-label">Vector Grid</span>
+        <label class="toggle"><input type="checkbox" id="toggleGrid"><span class="slider-track"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="ctrl-label">Animate Flow</span>
+        <label class="toggle"><input type="checkbox" id="toggleAnim" checked><span class="slider-track"></span></label>
+      </div>
+      <div class="ctrl-row"><span class="ctrl-label">Line Density</span><span class="ctrl-val" id="densityVal">16</span></div>
+      <input type="range" id="lineDensity" min="6" max="28" value="16">
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-btns">
+      <button class="btn primary" id="playPauseBtn" onclick="togglePlay()">⏸ Pause</button>
+      <button class="btn" onclick="resetAll()">↺ Reset</button>
+    </div>
+
+    <!-- Explanation panel -->
+    <div class="explain">
+      <div class="explain-title">📖 Live Explanation</div>
+      <div class="explain-card highlight" id="card1">
+        <div class="card-icon">🧲</div>
+        <div class="card-head">Magnetic Field Lines</div>
+        Field lines flow from <strong>North → South</strong> outside the magnet. Closer lines = stronger field. Drag the magnet to see lines shift in real time.
+      </div>
+      <div class="explain-card" id="card2">
+        <div class="card-icon">⚡</div>
+        <div class="card-head">Current & Magnetism</div>
+        Enable the wire to see circular field lines — a discovery by Ørsted in 1820. Direction follows the <strong>Right-Hand Rule</strong>.
+      </div>
+      <div class="explain-card" id="card3">
+        <div class="card-icon">🔀</div>
+        <div class="card-head">Superposition</div>
+        When both sources are active, their fields <strong>add together</strong>. Regions where they oppose each other create field cancellation.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const S = {
+  magnet: { x: 0.4, y: 0.5, angle: 0, strength: 60, visible: true, labels: true },
+  wire:   { x: 0.7, y: 0.35, strength: 40, active: false, dir: 1 }, // dir: 1=out, -1=in
+  viz:    { lines: true, grid: false, anim: true, density: 16 },
+  sim:    { playing: true, t: 0, mode: 'simple' },
+  drag:   { what: null, ox: 0, oy: 0 }
+};
+
+// ─────────────────────────────────────────────
+// CANVAS SETUP
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  const wrap = canvas.parentElement;
+  W = canvas.width  = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', () => { resize(); });
+resize();
+
+// ─────────────────────────────────────────────
+// PHYSICS — magnetic field vector at point (px,py)
+// ─────────────────────────────────────────────
+function magnetField(px, py) {
+  const mx = S.magnet.x * W, my = S.magnet.y * H;
+  const ang = S.magnet.angle * Math.PI / 180;
+  const str = S.magnet.strength;
+  const halfLen = Math.min(W, H) * 0.07;
+
+  // Dipole: north and south poles
+  const nx = mx + Math.cos(ang) * halfLen;
+  const ny = my + Math.sin(ang) * halfLen;
+  const sx = mx - Math.cos(ang) * halfLen;
+  const sy = my - Math.sin(ang) * halfLen;
+
+  // Field from north pole (source) and south pole (sink)
+  function poleField(px, py, pox, poy, sign) {
+    const dx = px - pox, dy = py - poy;
+    const r2 = dx*dx + dy*dy;
+    const r  = Math.sqrt(r2) + 0.001;
+    const mag = sign * str * 800 / (r2 * r);
+    return { x: mag * dx / r, y: mag * dy / r };
+  }
+
+  const fn = poleField(px, py, nx, ny,  1);
+  const fs = poleField(px, py, sx, sy, -1);
+  return { x: fn.x + fs.x, y: fn.y + fs.y };
+}
+
+function wireField(px, py) {
+  if (!S.wire.active) return { x: 0, y: 0 };
+  const wx = S.wire.x * W, wy = S.wire.y * H;
+  const dx = px - wx, dy = py - wy;
+  const r2 = dx*dx + dy*dy;
+  const r  = Math.sqrt(r2) + 0.001;
+  const str = S.wire.strength * S.wire.dir;
+  // Circular field: perpendicular to radial direction
+  const mag = str * 600 / (r2);
+  return { x: -mag * dy / r, y: mag * dx / r };
+}
+
+function totalField(px, py) {
+  const mf = S.magnet.visible ? magnetField(px, py) : { x: 0, y: 0 };
+  const wf = wireField(px, py);
+  return { x: mf.x + wf.x, y: mf.y + wf.y };
+}
+
+// ─────────────────────────────────────────────
+// FIELD LINE TRACING (Runge-Kutta 4)
+// ─────────────────────────────────────────────
+function traceFieldLine(x0, y0, fwd) {
+  const pts = [{ x: x0, y: y0 }];
+  let x = x0, y = y0;
+  const step = 3.5, maxSteps = 400;
+  const sign = fwd ? 1 : -1;
+
+  for (let i = 0; i < maxSteps; i++) {
+    const f = totalField(x, y);
+    const len = Math.sqrt(f.x*f.x + f.y*f.y) + 1e-9;
+    if (len < 0.01) break;
+
+    const dx = sign * f.x / len * step;
+    const dy = sign * f.y / len * step;
+
+    x += dx; y += dy;
+    if (x < -20 || x > W+20 || y < -20 || y > H+20) break;
+    pts.push({ x, y });
+
+    // stop if we loop back near start
+    if (i > 30) {
+      const d = Math.hypot(x - x0, y - y0);
+      if (d < step * 1.5) break;
+    }
+  }
+  return pts;
+}
+
+// ─────────────────────────────────────────────
+// DRAWING
+// ─────────────────────────────────────────────
+function drawBackground() {
+  ctx.fillStyle = '#090d13';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  const gs = 40;
+  for (let x = 0; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+}
+
+function drawFieldLines() {
+  if (!S.viz.lines) return;
+  const density = S.viz.density;
+  const hasMag = S.magnet.visible, hasWire = S.wire.active;
+  if (!hasMag && !hasWire) return;
+
+  const t = S.sim.t;
+  const seeds = [];
+
+  // Seed from magnet north pole
+  if (hasMag) {
+    const ang = S.magnet.angle * Math.PI / 180;
+    const halfLen = Math.min(W, H) * 0.07;
+    const mx = S.magnet.x * W, my = S.magnet.y * H;
+    const nx = mx + Math.cos(ang) * halfLen;
+    const ny = my + Math.sin(ang) * halfLen;
+    for (let i = 0; i < density; i++) {
+      const a = (2 * Math.PI * i / density);
+      const r = 12;
+      seeds.push({ x: nx + Math.cos(a)*r, y: ny + Math.sin(a)*r, type: 'mag' });
+    }
+  }
+
+  // Seed from wire
+  if (hasWire) {
+    const wx = S.wire.x * W, wy = S.wire.y * H;
+    const wireDensity = Math.floor(density * 0.6);
+    for (let i = 0; i < wireDensity; i++) {
+      const a = (2 * Math.PI * i / wireDensity);
+      const r = 18;
+      seeds.push({ x: wx + Math.cos(a)*r, y: wy + Math.sin(a)*r, type: 'wire' });
+    }
+  }
+
+  seeds.forEach(seed => {
+    const pts = traceFieldLine(seed.x, seed.y, true);
+    if (pts.length < 4) return;
+
+    // Compute field strength at midpoint for coloring
+    const mid = pts[Math.floor(pts.length / 2)];
+    const f = totalField(mid.x, mid.y);
+    const flen = Math.sqrt(f.x*f.x + f.y*f.y);
+    const intensity = Math.min(1, flen / 3);
+
+    // Color: north=red, wire=gold, blended
+    let r, g, b;
+    if (seed.type === 'wire') { r=255; g=200; b=50; }
+    else { r=80; g=160; b=255; }
+    const alpha = 0.15 + intensity * 0.6;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth = 0.8 + intensity * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    // Animated flow dots
+    if (S.viz.anim && S.sim.playing) {
+      const phase = (t * 0.0012) % 1;
+      const numDots = Math.max(2, Math.floor(pts.length / 30));
+      for (let d = 0; d < numDots; d++) {
+        const frac = (phase + d / numDots) % 1;
+        const idx = Math.floor(frac * (pts.length - 1));
+        const pt = pts[idx];
+        const dotR = 2.5 + intensity * 1.5;
+        const dotAlpha = 0.6 + intensity * 0.4;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, dotR, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(${r},${g},${b},${dotAlpha})`;
+        ctx.fill();
+      }
+    }
+
+    // Arrow at 2/3 point
+    if (pts.length > 10) {
+      const ai = Math.floor(pts.length * 0.65);
+      const p1 = pts[ai - 2], p2 = pts[ai + 2] || pts[ai];
+      const ax = p2.x - p1.x, ay = p2.y - p1.y;
+      const al = Math.sqrt(ax*ax + ay*ay);
+      if (al > 0.5) {
+        const ux = ax/al, uy = ay/al;
+        const arrowLen = 7;
+        ctx.beginPath();
+        ctx.moveTo(pts[ai].x, pts[ai].y);
+        ctx.lineTo(pts[ai].x - ux*arrowLen + uy*3, pts[ai].y - uy*arrowLen - ux*3);
+        ctx.moveTo(pts[ai].x, pts[ai].y);
+        ctx.lineTo(pts[ai].x - ux*arrowLen - uy*3, pts[ai].y - uy*arrowLen + ux*3);
+        ctx.strokeStyle = `rgba(${r},${g},${b},${alpha+0.2})`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  });
+}
+
+function drawVectorGrid() {
+  if (!S.viz.grid) return;
+  const spacing = 38;
+  ctx.save();
+  for (let x = spacing/2; x < W; x += spacing) {
+    for (let y = spacing/2; y < H; y += spacing) {
+      const f = totalField(x, y);
+      const len = Math.sqrt(f.x*f.x + f.y*f.y);
+      if (len < 0.05) continue;
+      const ux = f.x / len, uy = f.y / len;
+      const arrowLen = Math.min(14, 4 + Math.log(1 + len) * 3);
+      const alpha = Math.min(0.8, 0.1 + Math.log(1 + len) * 0.15);
+      ctx.strokeStyle = `rgba(100,180,255,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x - ux*arrowLen*0.5, y - uy*arrowLen*0.5);
+      ctx.lineTo(x + ux*arrowLen*0.5, y + uy*arrowLen*0.5);
+      ctx.stroke();
+      // arrowhead
+      ctx.beginPath();
+      ctx.moveTo(x + ux*arrowLen*0.5, y + uy*arrowLen*0.5);
+      ctx.lineTo(x + ux*arrowLen*0.5 - ux*4 + uy*2, y + uy*arrowLen*0.5 - uy*4 - ux*2);
+      ctx.moveTo(x + ux*arrowLen*0.5, y + uy*arrowLen*0.5);
+      ctx.lineTo(x + ux*arrowLen*0.5 - ux*4 - uy*2, y + uy*arrowLen*0.5 - uy*4 + ux*2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawMagnet() {
+  if (!S.magnet.visible) return;
+  const mx = S.magnet.x * W, my = S.magnet.y * H;
+  const ang = S.magnet.angle * Math.PI / 180;
+  const hw = Math.min(W, H) * 0.085, hh = 13;
+
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(ang);
+
+  // Glow
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, hw * 1.4);
+  glow.addColorStop(0, 'rgba(88,166,255,0.08)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(-hw * 1.4, -hh * 2, hw * 2.8, hh * 4);
+
+  // North half
+  const gN = ctx.createLinearGradient(0, -hh, hw, hh);
+  gN.addColorStop(0, '#ff6b6b'); gN.addColorStop(1, '#cc2222');
+  ctx.fillStyle = gN;
+  ctx.beginPath();
+  ctx.roundRect(0, -hh, hw, hh * 2, [0, 5, 5, 0]);
+  ctx.fill();
+
+  // South half
+  const gS = ctx.createLinearGradient(-hw, -hh, 0, hh);
+  gS.addColorStop(0, '#2255cc'); gS.addColorStop(1, '#4d9fff');
+  ctx.fillStyle = gS;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh, hw, hh * 2, [5, 0, 0, 5]);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(-hw, -hh, hw * 2, hh * 2, 5);
+  ctx.stroke();
+
+  // Labels
+  if (S.magnet.labels) {
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.floor(hh*1.1)}px Segoe UI`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('N', hw * 0.5, 0);
+    ctx.fillText('S', -hw * 0.5, 0);
+  }
+
+  ctx.restore();
+}
+
+function drawWire() {
+  if (!S.wire.active) return;
+  const wx = S.wire.x * W, wy = S.wire.y * H;
+  const r = 16 + S.wire.strength * 0.12;
+
+  ctx.save();
+
+  // Glow
+  const glow = ctx.createRadialGradient(wx, wy, 0, wx, wy, r * 3);
+  glow.addColorStop(0, 'rgba(255,215,0,0.15)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(wx, wy, r * 3, 0, Math.PI*2); ctx.fill();
+
+  // Wire circle
+  ctx.beginPath(); ctx.arc(wx, wy, r, 0, Math.PI*2);
+  const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, r);
+  wg.addColorStop(0, '#3a3000'); wg.addColorStop(1, '#1a1400');
+  ctx.fillStyle = wg;
+  ctx.fill();
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  // Direction symbol
+  ctx.fillStyle = '#ffd700';
+  ctx.font = `bold ${r * 1.2}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(S.wire.dir === 1 ? '⊙' : '⊗', wx, wy);
+
+  // Label
+  ctx.fillStyle = 'rgba(255,215,0,0.7)';
+  ctx.font = '10px Segoe UI';
+  ctx.fillText('Current Wire', wx, wy + r + 14);
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+// ANIMATION LOOP
+// ─────────────────────────────────────────────
+let lastFps = performance.now(), frameCount = 0;
+
+function loop(ts) {
+  if (S.sim.playing) S.sim.t = ts;
+
+  drawBackground();
+  drawVectorGrid();
+  drawFieldLines();
+  drawMagnet();
+  drawWire();
+
+  // FPS counter
+  frameCount++;
+  if (ts - lastFps > 1000) {
+    document.getElementById('fpsCounter').textContent = frameCount + ' fps';
+    frameCount = 0; lastFps = ts;
+  }
+
+  updateExplainCards();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ─────────────────────────────────────────────
+// DRAG INTERACTION
+// ─────────────────────────────────────────────
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width, scaleY = H / rect.height;
+  const touch = e.touches ? e.touches[0] : e;
+  return { x: (touch.clientX - rect.left) * scaleX, y: (touch.clientY - rect.top) * scaleY };
+}
+
+function hitTest(px, py) {
+  const mx = S.magnet.x * W, my = S.magnet.y * H;
+  if (S.magnet.visible && Math.hypot(px - mx, py - my) < 55) return 'magnet';
+  if (S.wire.active) {
+    const wx = S.wire.x * W, wy = S.wire.y * H;
+    if (Math.hypot(px - wx, py - wy) < 30) return 'wire';
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => startDrag(e));
+canvas.addEventListener('touchstart', e => startDrag(e), { passive: true });
+
+function startDrag(e) {
+  const pos = getPos(e);
+  const hit = hitTest(pos.x, pos.y);
+  if (hit) {
+    S.drag.what = hit;
+    S.drag.ox = pos.x; S.drag.oy = pos.y;
+    canvas.style.cursor = 'grabbing';
+  }
+}
+
+window.addEventListener('mousemove', e => {
+  const pos = getPos(e);
+  if (S.drag.what) {
+    if (S.drag.what === 'magnet') {
+      S.magnet.x = Math.max(0.05, Math.min(0.95, pos.x / W));
+      S.magnet.y = Math.max(0.05, Math.min(0.95, pos.y / H));
+    } else if (S.drag.what === 'wire') {
+      S.wire.x = Math.max(0.05, Math.min(0.95, pos.x / W));
+      S.wire.y = Math.max(0.05, Math.min(0.95, pos.y / H));
+    }
+    document.getElementById('statusPill').textContent = S.drag.what === 'magnet' ? '🧲 Moving magnet' : '⚡ Moving wire';
+  } else {
+    // Tooltip
+    const hit = hitTest(pos.x, pos.y);
+    canvas.style.cursor = hit ? 'grab' : 'default';
+    showTooltip(e, hit, pos);
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  S.drag.what = null;
+  canvas.style.cursor = 'default';
+  document.getElementById('statusPill').textContent = '🧲 Drag the magnet to explore';
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const pos = getPos(e);
+  if (S.drag.what === 'magnet') {
+    S.magnet.x = Math.max(0.05, Math.min(0.95, pos.x / W));
+    S.magnet.y = Math.max(0.05, Math.min(0.95, pos.y / H));
+  } else if (S.drag.what === 'wire') {
+    S.wire.x = Math.max(0.05, Math.min(0.95, pos.x / W));
+    S.wire.y = Math.max(0.05, Math.min(0.95, pos.y / H));
+  }
+}, { passive: false });
+canvas.addEventListener('touchend', () => { S.drag.what = null; });
+
+// ─────────────────────────────────────────────
+// TOOLTIP
+// ─────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, hit, pos) {
+  if (hit === 'magnet') {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top  = (e.clientY - 30) + 'px';
+    tooltip.innerHTML = '<strong>Bar Magnet</strong><br>Drag to move. Use the rotation slider to turn it.';
+  } else if (hit === 'wire') {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top  = (e.clientY - 30) + 'px';
+    tooltip.innerHTML = '<strong>Current Wire</strong><br>Drag to reposition. Toggle direction with the buttons.';
+  } else {
+    // Show field strength at hover point
+    const f = totalField(pos.x, pos.y);
+    const len = Math.sqrt(f.x*f.x + f.y*f.y);
+    if (len > 0.2 && S.sim.mode === 'advanced') {
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 12) + 'px';
+      tooltip.style.top  = (e.clientY - 30) + 'px';
+      tooltip.innerHTML = `<strong>Field Strength</strong><br>${len.toFixed(2)} T (relative)`;
+    } else {
+      tooltip.style.display = 'none';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+// EXPLANATION CARDS — dynamic highlight
+// ─────────────────────────────────────────────
+function updateExplainCards() {
+  const c1 = document.getElementById('card1');
+  const c2 = document.getElementById('card2');
+  const c3 = document.getElementById('card3');
+  const dragging = !!S.drag.what;
+  const wireOn = S.wire.active;
+  const both = S.magnet.visible && wireOn;
+
+  c1.className = 'explain-card' + (S.magnet.visible && !both ? ' highlight' : '');
+  c2.className = 'explain-card' + (wireOn && !both ? ' highlight' : '');
+  c3.className = 'explain-card' + (both ? ' highlight' : '');
+
+  if (both) {
+    c3.querySelector('.card-head').textContent = 'Superposition Active!';
+  } else {
+    c3.querySelector('.card-head').textContent = 'Superposition';
+  }
+}
+
+// ─────────────────────────────────────────────
+// CONTROL BINDINGS
+// ─────────────────────────────────────────────
+function bind(id, fn) { document.getElementById(id).addEventListener('input', fn); }
+function bindCheck(id, fn) { document.getElementById(id).addEventListener('change', fn); }
+
+bind('magStrength', e => { S.magnet.strength = +e.target.value; document.getElementById('magStrVal').textContent = e.target.value; });
+bind('magRotation', e => { S.magnet.angle = +e.target.value; document.getElementById('magRotVal').textContent = e.target.value + '°'; });
+bind('wireStrength', e => { S.wire.strength = +e.target.value; document.getElementById('wireStrVal').textContent = e.target.value; });
+bind('lineDensity',  e => { S.viz.density = +e.target.value; document.getElementById('densityVal').textContent = e.target.value; });
+
+bindCheck('toggleMagnet', e => { S.magnet.visible = e.target.checked; });
+bindCheck('toggleLabels', e => { S.magnet.labels  = e.target.checked; });
+bindCheck('toggleWire',   e => { S.wire.active    = e.target.checked; });
+bindCheck('toggleLines',  e => { S.viz.lines      = e.target.checked; });
+bindCheck('toggleGrid',   e => { S.viz.grid       = e.target.checked; });
+bindCheck('toggleAnim',   e => { S.viz.anim       = e.target.checked; });
+
+function setWireDir(d) {
+  S.wire.dir = d === 'out' ? 1 : -1;
+  document.getElementById('dirOut').className = 'dir-btn' + (d === 'out' ? ' active' : '');
+  document.getElementById('dirIn').className  = 'dir-btn' + (d === 'in'  ? ' active' : '');
+}
+
+function togglePlay() {
+  S.sim.playing = !S.sim.playing;
+  document.getElementById('playPauseBtn').textContent = S.sim.playing ? '⏸ Pause' : '▶ Play';
+}
+
+function resetAll() {
+  S.magnet.x = 0.4; S.magnet.y = 0.5; S.magnet.angle = 0; S.magnet.strength = 60;
+  S.wire.x   = 0.7; S.wire.y   = 0.35; S.wire.strength = 40; S.wire.dir = 1;
+  S.wire.active = false; S.sim.playing = true;
+  document.getElementById('magStrength').value = 60; document.getElementById('magStrVal').textContent = 60;
+  document.getElementById('magRotation').value = 0;  document.getElementById('magRotVal').textContent = '0°';
+  document.getElementById('wireStrength').value = 40; document.getElementById('wireStrVal').textContent = 40;
+  document.getElementById('toggleWire').checked = false;
+  document.getElementById('playPauseBtn').textContent = '⏸ Pause';
+  setWireDir('out');
+}
+
+document.getElementById('modeToggle').addEventListener('click', function() {
+  S.sim.mode = S.sim.mode === 'simple' ? 'advanced' : 'simple';
+  this.textContent = S.sim.mode === 'simple' ? 'Simple Mode' : 'Advanced Mode';
+  this.style.borderColor = S.sim.mode === 'advanced' ? 'var(--accent)' : 'var(--green)';
+  this.style.color       = S.sim.mode === 'advanced' ? 'var(--accent)' : 'var(--green)';
+  this.style.background  = S.sim.mode === 'advanced' ? 'rgba(88,166,255,.12)' : 'rgba(63,185,80,.12)';
+  // In advanced mode: show vector grid by default hint
+  if (S.sim.mode === 'advanced') {
+    document.getElementById('toggleGrid').checked = true;
+    S.viz.grid = true;
+  }
+});
+</script>
+</body>
+</html>
