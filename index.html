@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projectile Motion Lab</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --card: #21253a;
+    --accent: #6c8fff;
+    --accent2: #ff6b6b;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #2e3347;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  header { text-align: center; padding: 20px 16px 10px; }
+  header h1 { font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: 14px; padding: 0 14px 20px; max-width: 1200px; margin: 0 auto; }
+  @media(max-width: 750px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .panel h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 14px; }
+
+  /* Controls */
+  .control-group { margin-bottom: 18px; }
+  .control-label { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px; }
+  .control-label span:last-child { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--border); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 0 3px rgba(108,143,255,0.2); }
+
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  button { border: none; border-radius: 8px; padding: 9px 0; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  #btnLaunch { background: var(--accent); color: #fff; }
+  #btnLaunch:hover { background: #8ba8ff; }
+  #btnLaunch:disabled { opacity: 0.45; cursor: not-allowed; }
+  #btnReset { background: var(--border); color: var(--text); }
+  #btnReset:hover { background: #3a3f58; }
+  #btnPause { background: var(--yellow); color: #000; font-size: 0.8rem; }
+  #btnPause:hover { opacity: 0.85; }
+  #btnSlow { background: var(--surface); color: var(--text); border: 1px solid var(--border); font-size: 0.8rem; }
+  #btnSlow.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .btn-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-top: 10px; }
+  .toggle { position: relative; width: 36px; height: 20px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider-tog { position: absolute; inset: 0; background: var(--border); border-radius: 20px; transition: .3s; cursor: pointer; }
+  .slider-tog:before { content:''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+  input:checked + .slider-tog { background: var(--accent); }
+  input:checked + .slider-tog:before { transform: translateX(16px); }
+
+  /* Stats */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .stat { background: var(--surface); border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: var(--green); margin-top: 2px; }
+  .stat-value.blue { color: var(--accent); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.red { color: var(--accent2); }
+
+  /* Equations */
+  .eq-list { list-style: none; }
+  .eq-list li { background: var(--surface); border-radius: 8px; padding: 9px 12px; margin-bottom: 7px; font-size: 0.82rem; line-height: 1.5; }
+  .eq-list li .eq-label { color: var(--muted); font-size: 0.75rem; display: block; margin-bottom: 2px; }
+  .eq-list li .eq-val { color: var(--green); font-weight: 700; }
+
+  /* Canvas area */
+  .canvas-wrap { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; position: relative; }
+  canvas { display: block; width: 100%; }
+  .canvas-badge { position: absolute; top: 10px; right: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: var(--muted); }
+  .canvas-badge span { color: var(--text); font-weight: 600; }
+
+  .right-col { display: flex; flex-direction: column; gap: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 Projectile Motion Lab</h1>
+  <p>Adjust parameters, launch, and watch the physics unfold in real time.</p>
+</header>
+
+<div class="layout">
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <div class="panel">
+      <h3>⚙️ Launch Controls</h3>
+      <div class="control-group">
+        <div class="control-label"><span>Launch Angle (θ)</span><span id="lblAngle">45°</span></div>
+        <input type="range" id="sldAngle" min="1" max="89" value="45">
+      </div>
+      <div class="control-group">
+        <div class="control-label"><span>Initial Velocity (v₀)</span><span id="lblVel">30 m/s</span></div>
+        <input type="range" id="sldVel" min="1" max="100" value="30">
+      </div>
+      <div class="btn-row">
+        <button id="btnLaunch">▶ Launch</button>
+        <button id="btnReset">↺ Reset</button>
+      </div>
+      <div class="btn-row2">
+        <button id="btnPause" disabled>⏸ Pause</button>
+        <button id="btnSlow">🐢 Slow-Mo</button>
+      </div>
+      <div class="toggle-row">
+        Trail Path
+        <label class="toggle"><input type="checkbox" id="togTrail" checked><span class="slider-tog"></span></label>
+      </div>
+      <div class="toggle-row">
+        Grid Lines
+        <label class="toggle"><input type="checkbox" id="togGrid" checked><span class="slider-tog"></span></label>
+      </div>
+      <div class="toggle-row">
+        Angle Arc
+        <label class="toggle"><input type="checkbox" id="togArc" checked><span class="slider-tog"></span></label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>📊 Live Results</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-label">Time of Flight</div><div class="stat-value blue" id="statTof">—</div></div>
+        <div class="stat"><div class="stat-label">Max Height</div><div class="stat-value yellow" id="statH">—</div></div>
+        <div class="stat"><div class="stat-label">Range</div><div class="stat-value red" id="statR">—</div></div>
+        <div class="stat"><div class="stat-label">Current Pos</div><div class="stat-value" id="statPos">—</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>🧮 Live Equations</h3>
+      <ul class="eq-list" id="eqPanel">
+        <li><span class="eq-label">Horizontal velocity</span>vₓ = v₀·cos(θ) = <span class="eq-val" id="eqVx">—</span></li>
+        <li><span class="eq-label">Vertical velocity</span>v_y = v₀·sin(θ) = <span class="eq-val" id="eqVy">—</span></li>
+        <li><span class="eq-label">Time of flight</span>T = 2v₀sin(θ)/g = <span class="eq-val" id="eqT">—</span></li>
+        <li><span class="eq-label">Max height</span>H = v₀²sin²(θ)/(2g) = <span class="eq-val" id="eqH">—</span></li>
+        <li><span class="eq-label">Range</span>R = v₀²sin(2θ)/g = <span class="eq-val" id="eqR">—</span></li>
+        <li><span class="eq-label">Position x(t)</span>x = vₓ·t = <span class="eq-val" id="eqX">—</span></li>
+        <li><span class="eq-label">Position y(t)</span>y = v_y·t − ½gt² = <span class="eq-val" id="eqY">—</span></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+    <div class="canvas-wrap">
+      <canvas id="cvs"></canvas>
+      <div class="canvas-badge">g = <span>9.81 m/s²</span></div>
+    </div>
+    <div class="panel" style="font-size:0.8rem;color:var(--muted);line-height:1.7">
+      <h3>📖 Key Concepts</h3>
+      <strong style="color:var(--text)">Independence of Motion</strong> — Horizontal and vertical components are <em>independent</em>. Gravity only acts vertically; horizontal velocity stays constant (no air resistance).<br><br>
+      <strong style="color:var(--text)">Optimal Angle</strong> — Maximum range is always achieved at <strong style="color:var(--yellow)">45°</strong>. Try it! Equal angles above and below 45° give the same range (e.g. 30° = 60°).
+    </div>
+  </div>
+</div>
+
+<script>
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const sldAngle = document.getElementById('sldAngle');
+const sldVel   = document.getElementById('sldVel');
+const lblAngle = document.getElementById('lblAngle');
+const lblVel   = document.getElementById('lblVel');
+const btnLaunch= document.getElementById('btnLaunch');
+const btnReset = document.getElementById('btnReset');
+const btnPause = document.getElementById('btnPause');
+const btnSlow  = document.getElementById('btnSlow');
+const togTrail = document.getElementById('togTrail');
+const togGrid  = document.getElementById('togGrid');
+const togArc   = document.getElementById('togArc');
+
+const G = 9.81;
+let animId = null, paused = false, slowMo = false;
+let simT = 0, trail = [], launched = false;
+let vx0, vy0, tof, maxH, range, scale, originX, originY;
+
+function resize() {
+  const w = cvs.parentElement.clientWidth;
+  const h = Math.max(320, Math.min(w * 0.55, 500));
+  cvs.width = w; cvs.height = h;
+  computeScale();
+  drawIdle();
+}
+
+function getParams() {
+  const deg = +sldAngle.value, v0 = +sldVel.value;
+  const rad = deg * Math.PI / 180;
+  return { deg, v0, rad,
+    vx: v0 * Math.cos(rad),
+    vy: v0 * Math.sin(rad),
+    tof: 2 * v0 * Math.sin(rad) / G,
+    maxH: (v0 * Math.sin(rad)) ** 2 / (2 * G),
+    range: v0 ** 2 * Math.sin(2 * rad) / G
+  };
+}
+
+function computeScale() {
+  const p = getParams();
+  originX = 60; originY = cvs.height - 50;
+  const usableW = cvs.width - originX - 30;
+  const usableH = cvs.height - 80;
+  scale = Math.min(usableW / (p.range || 1), usableH / (p.maxH || 1)) * 0.88;
+  if (!isFinite(scale) || scale <= 0) scale = 1;
+}
+
+function toCanvas(x, y) {
+  return { cx: originX + x * scale, cy: originY - y * scale };
+}
+
+function updateLabels() {
+  const p = getParams();
+  lblAngle.textContent = p.deg + '°';
+  lblVel.textContent = p.v0 + ' m/s';
+  document.getElementById('eqVx').textContent = p.vx.toFixed(2) + ' m/s';
+  document.getElementById('eqVy').textContent = p.vy.toFixed(2) + ' m/s';
+  document.getElementById('eqT').textContent  = p.tof.toFixed(2) + ' s';
+  document.getElementById('eqH').textContent  = p.maxH.toFixed(2) + ' m';
+  document.getElementById('eqR').textContent  = p.range.toFixed(2) + ' m';
+  document.getElementById('statTof').textContent = p.tof.toFixed(2) + ' s';
+  document.getElementById('statH').textContent   = p.maxH.toFixed(2) + ' m';
+  document.getElementById('statR').textContent   = p.range.toFixed(2) + ' m';
+}
+
+function drawIdle() {
+  const p = getParams();
+  computeScale();
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  drawGrid(p);
+  drawGround();
+  drawGhostTrajectory(p);
+  drawAngleArc(p);
+  drawBall(originX, originY, '#6c8fff');
+  updateLabels();
+  document.getElementById('eqX').textContent = '0.00 m';
+  document.getElementById('eqY').textContent = '0.00 m';
+  document.getElementById('statPos').textContent = '(0, 0)';
+}
+
+function drawGrid(p) {
+  if (!togGrid.checked) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  // vertical lines
+  const stepX = niceStep(p.range / 5);
+  for (let x = 0; x <= p.range + stepX; x += stepX) {
+    const {cx} = toCanvas(x, 0);
+    ctx.beginPath(); ctx.moveTo(cx, 20); ctx.lineTo(cx, originY);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.5)'; ctx.font = '10px sans-serif';
+    ctx.fillText(x.toFixed(0)+'m', cx - 8, originY + 14);
+  }
+  const stepY = niceStep(p.maxH / 4);
+  for (let y = stepY; y <= p.maxH + stepY; y += stepY) {
+    const {cy} = toCanvas(0, y);
+    if (cy < 20) break;
+    ctx.beginPath(); ctx.moveTo(originX, cy); ctx.lineTo(cvs.width - 10, cy);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.5)'; ctx.font = '10px sans-serif';
+    ctx.fillText(y.toFixed(0)+'m', 4, cy + 4);
+  }
+  ctx.restore();
+}
+
+function niceStep(raw) {
+  const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const norm = raw / mag;
+  if (norm < 1.5) return mag;
+  if (norm < 3.5) return 2 * mag;
+  if (norm < 7.5) return 5 * mag;
+  return 10 * mag;
+}
+
+function drawGround() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(originX - 10, originY);
+  ctx.lineTo(cvs.width - 10, originY);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawGhostTrajectory(p) {
+  const steps = 200;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(108,143,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * p.tof;
+    const x = p.vx * t, y = p.vy * t - 0.5 * G * t * t;
+    const {cx, cy} = toCanvas(x, y);
+    i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAngleArc(p) {
+  if (!togArc.checked) return;
+  ctx.save();
+  const r = 40;
+  ctx.strokeStyle = 'rgba(251,191,36,0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(originX, originY, r, -p.rad, 0);
+  ctx.stroke();
+  // angle label
+  const midA = -p.rad / 2;
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText(p.deg + '°', originX + r * Math.cos(midA) + 4, originY + r * Math.sin(midA) + 2);
+  // launch line
+  ctx.strokeStyle = 'rgba(251,191,36,0.4)';
+  ctx.setLineDash([4,3]);
+  ctx.beginPath();
+  ctx.moveTo(originX, originY);
+  ctx.lineTo(originX + 55 * Math.cos(-p.rad), originY + 55 * Math.sin(-p.rad));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTrail() {
+  if (!togTrail.checked || trail.length < 2) return;
+  ctx.save();
+  ctx.lineWidth = 2;
+  for (let i = 1; i < trail.length; i++) {
+    const a = (i / trail.length) * 0.8;
+    ctx.strokeStyle = `rgba(255,107,107,${a})`;
+    ctx.beginPath();
+    ctx.moveTo(trail[i-1].cx, trail[i-1].cy);
+    ctx.lineTo(trail[i].cx, trail[i].cy);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBall(cx, cy, color) {
+  ctx.save();
+  const grad = ctx.createRadialGradient(cx-3, cy-3, 1, cx, cy, 10);
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(1, color);
+  ctx.fillStyle = grad;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function animate() {
+  if (paused) { animId = requestAnimationFrame(animate); return; }
+  const p = getParams();
+  const dt = slowMo ? 0.016 * 0.3 : 0.016;
+  simT += dt;
+  if (simT > p.tof) { simT = p.tof; }
+
+  const x = p.vx * simT;
+  const y = p.vy * simT - 0.5 * G * simT * simT;
+  const {cx, cy} = toCanvas(x, y);
+  trail.push({cx, cy});
+
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  drawGrid(p);
+  drawGround();
+  drawGhostTrajectory(p);
+  drawAngleArc(p);
+  drawTrail();
+  drawBall(cx, cy, '#ff6b6b');
+
+  // live update equations
+  document.getElementById('eqX').textContent  = x.toFixed(2) + ' m';
+  document.getElementById('eqY').textContent  = Math.max(y, 0).toFixed(2) + ' m';
+  document.getElementById('statPos').textContent = `(${x.toFixed(1)}, ${Math.max(y,0).toFixed(1)})`;
+
+  if (simT >= p.tof) {
+    cancelAnimationFrame(animId); animId = null;
+    launched = false;
+    btnLaunch.disabled = false;
+    btnPause.disabled = true;
+    drawBall(toCanvas(p.range, 0).cx, originY, '#4ade80');
+    return;
+  }
+  animId = requestAnimationFrame(animate);
+}
+
+function launch() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  const p = getParams();
+  computeScale();
+  simT = 0; trail = []; paused = false; launched = true;
+  btnLaunch.disabled = true;
+  btnPause.disabled = false;
+  btnPause.textContent = '⏸ Pause';
+  updateLabels();
+  animate();
+}
+
+function reset() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  simT = 0; trail = []; paused = false; launched = false;
+  btnLaunch.disabled = false;
+  btnPause.disabled = true;
+  btnPause.textContent = '⏸ Pause';
+  drawIdle();
+}
+
+sldAngle.addEventListener('input', () => { if (!launched) { computeScale(); drawIdle(); } else updateLabels(); });
+sldVel.addEventListener('input',   () => { if (!launched) { computeScale(); drawIdle(); } else updateLabels(); });
+btnLaunch.addEventListener('click', launch);
+btnReset.addEventListener('click', reset);
+btnPause.addEventListener('click', () => {
+  paused = !paused;
+  btnPause.textContent = paused ? '▶ Resume' : '⏸ Pause';
+});
+btnSlow.addEventListener('click', () => {
+  slowMo = !slowMo;
+  btnSlow.classList.toggle('active', slowMo);
+  btnSlow.textContent = slowMo ? '🐢 Slow-Mo ON' : '🐢 Slow-Mo';
+});
+togTrail.addEventListener('change', () => { if (!launched) drawIdle(); });
+togGrid.addEventListener('change',  () => { if (!launched) drawIdle(); });
+togArc.addEventListener('change',   () => { if (!launched) drawIdle(); });
+
+window.addEventListener('resize', resize);
+resize();
+updateLabels();
+</script>
+</body>
+</html>
