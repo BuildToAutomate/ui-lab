@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Career Gantt Chart</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f5f7fa;
+    }
+
+    h2 {
+        text-align: center;
+    }
+
+    .gantt {
+        display: grid;
+        grid-template-columns: 200px repeat(8, 1fr);
+        gap: 5px;
+        align-items: center;
+    }
+
+    .header {
+        font-weight: bold;
+        text-align: center;
+        background: #ddd;
+        padding: 10px;
+    }
+
+    .task {
+        background: #fff;
+        padding: 10px;
+        border-left: 4px solid #333;
+    }
+
+    .bar {
+        height: 25px;
+        border-radius: 5px;
+    }
+
+    .cert { background: #4CAF50; }
+    .youtube { background: #2196F3; }
+    .website { background: #FF9800; }
+    .course { background: #9C27B0; }
+    .submit { background: #F44336; }
+
+</style>
+</head>
+<body>
+
+<h2>AI Engineer Roadmap Gantt Chart (8 Weeks)</h2>
+
+<div class="gantt">
+
+    <!-- Header -->
+    <div></div>
+    <div class="header">W1</div>
+    <div class="header">W2</div>
+    <div class="header">W3</div>
+    <div class="header">W4</div>
+    <div class="header">W5</div>
+    <div class="header">W6</div>
+    <div class="header">W7</div>
+    <div class="header">W8</div>
+
+    <!-- Certification -->
+    <div class="task">AI Certification</div>
+    <div class="bar cert" style="grid-column: 2 / span 4;"></div>
+
+    <!-- YouTube -->
+    <div class="task">YouTube Content</div>
+    <div class="bar youtube" style="grid-column: 2 / span 6;"></div>
+
+    <!-- Website -->
+    <div class="task">Build Website</div>
+    <div class="bar website" style="grid-column: 4 / span 2;"></div>
+
+    <!-- Course Creation -->
+    <div class="task">Create Course</div>
+    <div class="bar course" style="grid-column: 5 / span 3;"></div>
+
+    <!-- Submit -->
+    <div class="task">Submit to LinkedIn Learning</div>
+    <div class="bar submit" style="grid-column: 8 / span 1;"></div>
+
+</div>
+
+</body>
+</html>
