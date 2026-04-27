@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CueTrack — Billiard Hall Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111318;
+    --surface2: #181c23;
+    --border: #222830;
+    --green: #1a7a3c;
+    --green-felt: #1d6b3a;
+    --green-bright: #2ecc71;
+    --green-glow: rgba(46,204,113,0.15);
+    --amber: #f0a500;
+    --amber-dim: rgba(240,165,0,0.12);
+    --red: #e74c3c;
+    --red-dim: rgba(231,76,60,0.12);
+    --blue: #3498db;
+    --text: #e8eaf0;
+    --text-dim: #6b7280;
+    --text-muted: #3d4452;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: var(–font-body);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Felt texture overlay */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+radial-gradient(ellipse at 20% 50%, rgba(26,122,60,0.04) 0%, transparent 60%),
+radial-gradient(ellipse at 80% 20%, rgba(46,204,113,0.03) 0%, transparent 50%);
+pointer-events: none;
+z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+position: sticky;
+top: 0;
+z-index: 100;
+background: rgba(10,12,15,0.95);
+backdrop-filter: blur(12px);
+border-bottom: 1px solid var(–border);
+padding: 0 2rem;
+display: flex;
+align-items: center;
+justify-content: space-between;
+height: 64px;
+}
+
+.logo {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+
+.logo-icon {
+width: 36px;
+height: 36px;
+background: var(–green-felt);
+border-radius: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 18px;
+box-shadow: 0 0 20px rgba(46,204,113,0.2);
+}
+
+.logo-text {
+font-family: var(–font-display);
+font-size: 28px;
+letter-spacing: 3px;
+color: var(–text);
+}
+
+.logo-text span { color: var(–green-bright); }
+
+.header-meta {
+font-family: var(–font-mono);
+font-size: 11px;
+color: var(–text-dim);
+text-align: right;
+}
+
+.live-badge {
+display: inline-flex;
+align-items: center;
+gap: 5px;
+background: rgba(46,204,113,0.1);
+border: 1px solid rgba(46,204,113,0.25);
+color: var(–green-bright);
+font-size: 10px;
+font-family: var(–font-mono);
+padding: 3px 10px;
+border-radius: 20px;
+letter-spacing: 1px;
+}
+
+.live-dot {
+width: 6px; height: 6px;
+background: var(–green-bright);
+border-radius: 50%;
+animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ── NAV TABS ── */
+nav {
+display: flex;
+gap: 0;
+padding: 0 2rem;
+border-bottom: 1px solid var(–border);
+background: var(–surface);
+}
+
+.tab {
+padding: 14px 24px;
+font-size: 13px;
+font-weight: 500;
+color: var(–text-dim);
+cursor: pointer;
+border-bottom: 2px solid transparent;
+transition: all 0.2s;
+letter-spacing: 0.5px;
+}
+
+.tab:hover { color: var(–text); }
+.tab.active {
+color: var(–green-bright);
+border-bottom-color: var(–green-bright);
+}
+
+/* ── LAYOUT ── */
+main {
+position: relative;
+z-index: 1;
+padding: 2rem;
+max-width: 1400px;
+margin: 0 auto;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 1rem;
+margin-bottom: 2rem;
+}
+
+.kpi-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 1.25rem 1.5rem;
+position: relative;
+overflow: hidden;
+transition: border-color 0.2s;
+}
+
+.kpi-card::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 2px;
+}
+
+.kpi-card.green::before { background: var(–green-bright); }
+.kpi-card.amber::before { background: var(–amber); }
+.kpi-card.blue::before { background: var(–blue); }
+.kpi-card.red::before { background: var(–red); }
+
+.kpi-label {
+font-size: 11px;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 1.5px;
+font-family: var(–font-mono);
+margin-bottom: 8px;
+}
+
+.kpi-value {
+font-family: var(–font-display);
+font-size: 36px;
+letter-spacing: 1px;
+line-height: 1;
+margin-bottom: 6px;
+}
+
+.kpi-card.green .kpi-value { color: var(–green-bright); }
+.kpi-card.amber .kpi-value { color: var(–amber); }
+.kpi-card.blue .kpi-value { color: var(–blue); }
+.kpi-card.red .kpi-value { color: var(–red); }
+
+.kpi-sub {
+font-size: 11px;
+color: var(–text-dim);
+}
+
+/* ── TABLE LAYOUT ── */
+.billiard-floor {
+display: grid;
+grid-template-columns: 1fr 380px;
+gap: 1.5rem;
+align-items: start;
+}
+
+/* ── TABLE GRID ── */
+.tables-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+gap: 1rem;
+}
+
+.pool-table {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+overflow: hidden;
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
+}
+
+.pool-table:hover { border-color: #444; transform: translateY(-2px); }
+
+.pool-table.occupied {
+border-color: var(–green-bright);
+box-shadow: 0 0 20px var(–green-glow);
+}
+
+.pool-table.reserved { border-color: var(–amber); }
+
+.table-felt {
+height: 110px;
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.table-felt-bg {
+position: absolute;
+inset: 8px;
+border-radius: 6px;
+background: var(–green-felt);
+opacity: 0.3;
+}
+
+.pool-table.occupied .table-felt-bg { opacity: 0.8; }
+.pool-table.reserved .table-felt-bg {
+background: #6b4f1a;
+opacity: 0.5;
+}
+
+.table-felt-border {
+position: absolute;
+inset: 6px;
+border-radius: 7px;
+border: 2px solid rgba(255,255,255,0.05);
+}
+
+.table-num {
+font-family: var(–font-display);
+font-size: 40px;
+color: rgba(255,255,255,0.15);
+position: relative;
+z-index: 1;
+}
+
+.pool-table.occupied .table-num { color: rgba(255,255,255,0.5); }
+
+.table-pockets {
+position: absolute;
+inset: 6px;
+}
+
+.pocket {
+position: absolute;
+width: 10px; height: 10px;
+background: #0a0c0f;
+border-radius: 50%;
+border: 1px solid rgba(255,255,255,0.1);
+}
+
+.pocket.tl { top: 0; left: 0; }
+.pocket.tr { top: 0; right: 0; }
+.pocket.bl { bottom: 0; left: 0; }
+.pocket.br { bottom: 0; right: 0; }
+.pocket.ml { top: 50%; left: 0; transform: translateY(-50%); }
+.pocket.mr { top: 50%; right: 0; transform: translateY(-50%); }
+
+.table-info {
+padding: 10px 12px;
+border-top: 1px solid var(–border);
+}
+
+.table-status {
+font-size: 10px;
+font-family: var(–font-mono);
+text-transform: uppercase;
+letter-spacing: 1px;
+margin-bottom: 4px;
+}
+
+.status-open { color: var(–text-dim); }
+.status-occupied { color: var(–green-bright); }
+.status-reserved { color: var(–amber); }
+
+.table-timer {
+font-family: var(–font-mono);
+font-size: 20px;
+font-weight: 500;
+color: var(–text);
+}
+
+.table-rate {
+font-size: 10px;
+color: var(–text-dim);
+margin-top: 2px;
+}
+
+/* ── SESSION FORM ── */
+.session-panel {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 1.5rem;
+}
+
+.panel-title {
+font-family: var(–font-display);
+font-size: 20px;
+letter-spacing: 2px;
+margin-bottom: 1.25rem;
+color: var(–green-bright);
+}
+
+.form-group {
+margin-bottom: 1rem;
+}
+
+label {
+display: block;
+font-size: 11px;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-family: var(–font-mono);
+margin-bottom: 6px;
+}
+
+input, select {
+width: 100%;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+color: var(–text);
+font-family: var(–font-body);
+font-size: 14px;
+padding: 10px 12px;
+outline: none;
+transition: border-color 0.2s;
+}
+
+input:focus, select:focus { border-color: var(–green-bright); }
+select option { background: var(–surface2); }
+
+.btn {
+width: 100%;
+padding: 12px;
+border-radius: 8px;
+border: none;
+font-family: var(–font-display);
+font-size: 16px;
+letter-spacing: 2px;
+cursor: pointer;
+transition: all 0.2s;
+margin-top: 4px;
+}
+
+.btn-primary {
+background: var(–green-bright);
+color: #0a0c0f;
+}
+
+.btn-primary:hover { background: #27ae60; transform: translateY(-1px); }
+
+.btn-danger {
+background: var(–red);
+color: white;
+}
+
+.btn-danger:hover { background: #c0392b; }
+
+.btn-amber {
+background: var(–amber);
+color: #0a0c0f;
+margin-top: 8px;
+}
+
+.btn-ghost {
+background: transparent;
+color: var(–text-dim);
+border: 1px solid var(–border);
+margin-top: 8px;
+}
+
+.btn-ghost:hover { border-color: #444; color: var(–text); }
+
+/* ── ACTIVE SESSIONS ── */
+.active-session-list {
+margin-top: 1.5rem;
+}
+
+.session-item {
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+padding: 12px;
+margin-bottom: 8px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+cursor: pointer;
+transition: border-color 0.2s;
+}
+
+.session-item:hover { border-color: #444; }
+.session-item.selected { border-color: var(–green-bright); }
+
+.session-item-left { flex: 1; }
+.session-table-name { font-weight: 600; font-size: 14px; }
+.session-player { font-size: 12px; color: var(–text-dim); }
+.session-item-right { text-align: right; }
+.session-elapsed {
+font-family: var(–font-mono);
+font-size: 16px;
+color: var(–green-bright);
+}
+
+.session-accrued {
+font-size: 12px;
+color: var(–amber);
+font-family: var(–font-mono);
+}
+
+/* ── REVENUE VIEW ── */
+.revenue-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1.5rem;
+}
+
+.chart-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 12px;
+padding: 1.5rem;
+}
+
+.chart-title {
+font-size: 11px;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 1.5px;
+font-family: var(–font-mono);
+margin-bottom: 1rem;
+}
+
+/* Bar chart */
+.bar-chart {
+display: flex;
+align-items: flex-end;
+gap: 6px;
+height: 140px;
+}
+
+.bar-wrap {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+height: 100%;
+justify-content: flex-end;
+}
+
+.bar {
+width: 100%;
+border-radius: 4px 4px 0 0;
+min-height: 4px;
+transition: height 0.5s ease;
+position: relative;
+cursor: pointer;
+}
+
+.bar-val {
+font-size: 9px;
+font-family: var(–font-mono);
+color: var(–text-dim);
+position: absolute;
+top: -16px;
+left: 50%;
+transform: translateX(-50%);
+white-space: nowrap;
+}
+
+.bar-label {
+font-size: 9px;
+color: var(–text-dim);
+font-family: var(–font-mono);
+text-align: center;
+}
+
+/* Revenue table */
+.data-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 13px;
+}
+
+.data-table th {
+text-align: left;
+font-size: 10px;
+color: var(–text-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-family: var(–font-mono);
+padding: 8px 12px;
+border-bottom: 1px solid var(–border);
+}
+
+.data-table td {
+padding: 10px 12px;
+border-bottom: 1px solid var(–border);
+color: var(–text);
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(–surface2); }
+
+.badge {
+display: inline-block;
+padding: 2px 8px;
+border-radius: 4px;
+font-size: 10px;
+font-family: var(–font-mono);
+}
+
+.badge-green { background: rgba(46,204,113,0.15); color: var(–green-bright); }
+.badge-amber { background: var(–amber-dim); color: var(–amber); }
+
+/* Donut chart */
+.donut-wrap {
+display: flex;
+align-items: center;
+gap: 1.5rem;
+}
+
+.donut-svg { flex-shrink: 0; }
+
+.donut-legend { flex: 1; }
+
+.legend-item {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-bottom: 10px;
+}
+
+.legend-dot {
+width: 10px; height: 10px;
+border-radius: 50%;
+flex-shrink: 0;
+}
+
+.legend-label { font-size: 12px; }
+.legend-val {
+font-family: var(–font-mono);
+font-size: 12px;
+color: var(–text-dim);
+margin-left: auto;
+}
+
+/* ── LOG VIEW ── */
+.log-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 1.5rem;
+}
+
+.log-title {
+font-family: var(–font-display);
+font-size: 24px;
+letter-spacing: 2px;
+}
+
+.filter-row {
+display: flex;
+gap: 0.75rem;
+margin-bottom: 1.5rem;
+}
+
+.filter-row select,
+.filter-row input {
+width: auto;
+flex: 1;
+}
+
+.modal-overlay {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.75);
+z-index: 200;
+display: flex;
+align-items: center;
+justify-content: center;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.2s;
+}
+
+.modal-overlay.open {
+opacity: 1;
+pointer-events: all;
+}
+
+.modal {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 2rem;
+width: 90%;
+max-width: 420px;
+transform: translateY(20px);
+transition: transform 0.2s;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+font-family: var(–font-display);
+font-size: 24px;
+letter-spacing: 2px;
+margin-bottom: 1.5rem;
+}
+
+.summary-row {
+display: flex;
+justify-content: space-between;
+padding: 8px 0;
+border-bottom: 1px solid var(–border);
+font-size: 13px;
+}
+
+.summary-row:last-child { border-bottom: none; }
+.summary-row.total {
+font-size: 16px;
+font-weight: 600;
+color: var(–green-bright);
+border-top: 1px solid var(–border);
+border-bottom: none;
+margin-top: 4px;
+padding-top: 12px;
+}
+
+.summary-label { color: var(–text-dim); }
+.summary-value { font-family: var(–font-mono); }
+
+.empty-state {
+text-align: center;
+padding: 3rem;
+color: var(–text-muted);
+}
+
+.empty-icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.3; }
+.empty-text { font-size: 14px; }
+
+@media (max-width: 900px) {
+.kpi-strip { grid-template-columns: repeat(2, 1fr); }
+.billiard-floor { grid-template-columns: 1fr; }
+.revenue-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎱</div>
+    <div class="logo-text">CUE<span>TRACK</span></div>
+  </div>
+  <div class="header-meta">
+    <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+    <div id="clock" style="margin-top:4px;"></div>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="switchTab('floor')">🎱 Floor</div>
+  <div class="tab" onclick="switchTab('revenue')">📊 Revenue</div>
+  <div class="tab" onclick="switchTab('log')">📋 Session Log</div>
+  <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+</nav>
+
+<main>
+
+  <!-- ══ FLOOR VIEW ══ -->
+
+  <div class="view active" id="view-floor">
+    <div class="kpi-strip">
+      <div class="kpi-card green">
+        <div class="kpi-label">Tables Active</div>
+        <div class="kpi-value" id="kpi-active">0</div>
+        <div class="kpi-sub">of <span id="kpi-total">8</span> tables</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Today Revenue</div>
+        <div class="kpi-value" id="kpi-revenue">₱0</div>
+        <div class="kpi-sub">completed sessions</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Live Accrued</div>
+        <div class="kpi-value" id="kpi-accrued">₱0</div>
+        <div class="kpi-sub">in-progress sessions</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Sessions Today</div>
+        <div class="kpi-value" id="kpi-sessions">0</div>
+        <div class="kpi-sub">avg <span id="kpi-avg">0</span> min each</div>
+      </div>
+    </div>
+
+```
+<div class="billiard-floor">
+  <div>
+    <div class="tables-grid" id="tables-grid"></div>
+  </div>
+
+  <div class="session-panel">
+    <div class="panel-title" id="form-title">START SESSION</div>
+
+    <div class="form-group">
+      <label>Table</label>
+      <select id="sel-table"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Player Name</label>
+      <input type="text" id="inp-player" placeholder="e.g. Juan dela Cruz">
+    </div>
+
+    <div class="form-group">
+      <label>Game Type</label>
+      <select id="sel-game">
+        <option value="8-ball">8-Ball Pool</option>
+        <option value="9-ball">9-Ball</option>
+        <option value="10-ball">10-Ball</option>
+        <option value="Billiards">3-Cushion Billiards</option>
+        <option value="Snooker">Snooker</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Rate Type</label>
+      <select id="sel-rate" onchange="updateRateDisplay()">
+        <option value="per_hour">Per Hour</option>
+        <option value="per_game">Per Game</option>
+        <option value="flat">Flat Rate</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Rate (₱)</label>
+      <input type="number" id="inp-rate" value="50" min="0">
+    </div>
+
+    <button class="btn btn-primary" id="btn-start" onclick="startSession()">START SESSION</button>
+    <button class="btn btn-danger" id="btn-end" onclick="endSession()" style="display:none; margin-top:8px;">END SESSION</button>
+    <button class="btn btn-ghost" id="btn-cancel" onclick="clearForm()" style="display:none;">CANCEL</button>
+
+    <div class="active-session-list" id="active-session-list">
+      <div style="font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; font-family:var(--font-mono); margin-bottom:8px;">Active Sessions</div>
+      <div id="sessions-container">
+        <div class="empty-state" style="padding:1.5rem;">
+          <div class="empty-text">No active sessions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══ REVENUE VIEW ══ -->
+
+  <div class="view" id="view-revenue">
+    <div class="kpi-strip">
+      <div class="kpi-card green">
+        <div class="kpi-label">Today Total</div>
+        <div class="kpi-value" id="rev-today">₱0</div>
+        <div class="kpi-sub" id="rev-today-sessions">0 sessions</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">This Week</div>
+        <div class="kpi-value" id="rev-week">₱0</div>
+        <div class="kpi-sub" id="rev-week-sessions">0 sessions</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">This Month</div>
+        <div class="kpi-value" id="rev-month">₱0</div>
+        <div class="kpi-sub" id="rev-month-sessions">0 sessions</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Top Table</div>
+        <div class="kpi-value" id="rev-top-table">—</div>
+        <div class="kpi-sub" id="rev-top-amount">₱0 today</div>
+      </div>
+    </div>
+
+```
+<div class="revenue-grid">
+  <div class="chart-card">
+    <div class="chart-title">Daily Revenue — Last 7 Days</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Revenue by Game Type</div>
+    <div class="donut-wrap">
+      <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120" id="donut-svg">
+        <circle cx="60" cy="60" r="45" fill="none" stroke="#222" stroke-width="18"/>
+        <text x="60" y="65" text-anchor="middle" fill="#6b7280" font-size="12" font-family="DM Mono">No data</text>
+      </svg>
+      <div class="donut-legend" id="donut-legend"></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="grid-column: 1/-1;">
+    <div class="chart-title">Table Performance</div>
+    <table class="data-table" id="table-perf"></table>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══ LOG VIEW ══ -->
+
+  <div class="view" id="view-log">
+    <div class="log-header">
+      <div class="log-title">SESSION LOG</div>
+      <button class="btn btn-danger" style="width:auto; padding: 8px 16px; font-size:13px;" onclick="clearAllLogs()">CLEAR ALL</button>
+    </div>
+
+```
+<div class="filter-row">
+  <select id="log-filter-table" onchange="renderLog()">
+    <option value="">All Tables</option>
+  </select>
+  <select id="log-filter-game" onchange="renderLog()">
+    <option value="">All Games</option>
+    <option value="8-ball">8-Ball Pool</option>
+    <option value="9-ball">9-Ball</option>
+    <option value="10-ball">10-Ball</option>
+    <option value="Billiards">3-Cushion</option>
+    <option value="Snooker">Snooker</option>
+  </select>
+  <input type="date" id="log-filter-date" onchange="renderLog()">
+</div>
+
+<div class="chart-card">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date/Time</th>
+        <th>Table</th>
+        <th>Player</th>
+        <th>Game</th>
+        <th>Duration</th>
+        <th>Rate</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody id="log-tbody"></tbody>
+  </table>
+</div>
+```
+
+  </div>
+
+  <!-- ══ SETTINGS VIEW ══ -->
+
+  <div class="view" id="view-settings">
+    <div style="max-width:600px;">
+      <div class="chart-card">
+        <div class="panel-title" style="margin-bottom:1.5rem;">HALL SETTINGS</div>
+
+```
+    <div class="form-group">
+      <label>Hall Name</label>
+      <input type="text" id="set-name" placeholder="My Billiard Hall">
+    </div>
+
+    <div class="form-group">
+      <label>Number of Tables</label>
+      <input type="number" id="set-tables" value="8" min="1" max="30">
+    </div>
+
+    <div class="form-group">
+      <label>Default Hourly Rate (₱)</label>
+      <input type="number" id="set-rate" value="50" min="0">
+    </div>
+
+    <div class="form-group">
+      <label>Currency Symbol</label>
+      <input type="text" id="set-currency" value="₱" maxlength="3">
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSettings()">SAVE SETTINGS</button>
+
+    <div style="margin-top:2rem; padding-top:2rem; border-top:1px solid var(--border);">
+      <div class="panel-title" style="color:var(--red); margin-bottom:1rem;">DANGER ZONE</div>
+      <button class="btn btn-danger" onclick="resetAll()">RESET ALL DATA</button>
+    </div>
+  </div>
+</div>
+```
+
+  </div>
+
+</main>
+
+<!-- ══ END SESSION MODAL ══ -->
+
+<div class="modal-overlay" id="end-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">END SESSION</div>
+    <div id="modal-summary"></div>
+    <div style="margin-top:1.5rem; display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary" onclick="confirmEndSession()">CONFIRM & CLOSE</button>
+      <button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ STATE ══
+let state = {
+  settings: { name: 'CueTrack Hall', tables: 8, defaultRate: 50, currency: '₱' },
+  activeSessions: {},   // tableId -> session object
+  completedSessions: [],
+  selectedSession: null,
+};
+
+// ══ LOAD ══
+function loadState() {
+  const saved = localStorage.getItem('cuetrack_v2');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      state = { ...state, ...parsed };
+      // Restore start times as Date objects
+      Object.keys(state.activeSessions).forEach(k => {
+        state.activeSessions[k].startTime = new Date(state.activeSessions[k].startTime);
+      });
+    } catch(e) {}
+  }
+}
+
+function saveState() {
+  localStorage.setItem('cuetrack_v2', JSON.stringify(state));
+}
+
+// ══ INIT ══
+loadState();
+initSettings();
+renderAll();
+
+// Clock
+setInterval(() => {
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString('en-PH', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}, 1000);
+
+// Timer update every second
+setInterval(() => {
+  if (Object.keys(state.activeSessions).length > 0) {
+    renderActiveSessions();
+    updateKPIs();
+    renderFloorTables();
+  }
+}, 1000);
+
+// ══ NAV ══
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('view-' + tab).classList.add('active');
+  if (tab === 'revenue') renderRevenue();
+  if (tab === 'log') renderLog();
+  if (tab === 'settings') loadSettingsForm();
+}
+
+// ══ SETTINGS ══
+function initSettings() {
+  const saved = localStorage.getItem('cuetrack_settings');
+  if (saved) state.settings = JSON.parse(saved);
+}
+
+function loadSettingsForm() {
+  document.getElementById('set-name').value = state.settings.name;
+  document.getElementById('set-tables').value = state.settings.tables;
+  document.getElementById('set-rate').value = state.settings.defaultRate;
+  document.getElementById('set-currency').value = state.settings.currency;
+}
+
+function saveSettings() {
+  state.settings.name = document.getElementById('set-name').value || 'CueTrack Hall';
+  state.settings.tables = parseInt(document.getElementById('set-tables').value) || 8;
+  state.settings.defaultRate = parseFloat(document.getElementById('set-rate').value) || 50;
+  state.settings.currency = document.getElementById('set-currency').value || '₱';
+  localStorage.setItem('cuetrack_settings', JSON.stringify(state.settings));
+  saveState();
+  renderAll();
+  alert('Settings saved!');
+}
+
+function resetAll() {
+  if (!confirm('Reset ALL data? This cannot be undone.')) return;
+  state.activeSessions = {};
+  state.completedSessions = [];
+  saveState();
+  renderAll();
+}
+
+function clearAllLogs() {
+  if (!confirm('Clear all completed session logs?')) return;
+  state.completedSessions = [];
+  saveState();
+  renderLog();
+  updateKPIs();
+}
+
+// ══ RENDER ALL ══
+function renderAll() {
+  renderFloorTables();
+  renderActiveSessions();
+  updateKPIs();
+  populateTableSelects();
+}
+
+// ══ FLOOR TABLES ══
+function renderFloorTables() {
+  const grid = document.getElementById('tables-grid');
+  const n = state.settings.tables;
+  const cur = state.settings.currency;
+  grid.innerHTML = '';
+
+  for (let i = 1; i <= n; i++) {
+    const tid = 'T' + i;
+    const session = state.activeSessions[tid];
+    const isActive = !!session;
+    const elapsed = isActive ? getElapsed(session.startTime) : null;
+
+    const div = document.createElement('div');
+    div.className = 'pool-table' + (isActive ? ' occupied' : '');
+    div.onclick = () => selectTable(tid);
+
+    let timerHtml = isActive
+      ? `<span class="table-timer">${formatTime(elapsed)}</span>
+         <div class="table-rate">${cur}${calcAmount(session, elapsed).toFixed(0)} accrued</div>`
+      : `<span class="table-timer" style="color:var(--text-muted)">—:——</span>
+         <div class="table-rate">${cur}${state.settings.defaultRate}/hr</div>`;
+
+    div.innerHTML = `
+      <div class="table-felt">
+        <div class="table-felt-bg"></div>
+        <div class="table-felt-border"></div>
+        <div class="table-pockets">
+          <div class="pocket tl"></div><div class="pocket tr"></div>
+          <div class="pocket ml"></div><div class="pocket mr"></div>
+          <div class="pocket bl"></div><div class="pocket br"></div>
+        </div>
+        <div class="table-num">${i}</div>
+      </div>
+      <div class="table-info">
+        <div class="table-status ${isActive ? 'status-occupied' : 'status-open'}">
+          ${isActive ? '● ' + (session.player || 'Active') : '○ OPEN'}
+        </div>
+        ${timerHtml}
+      </div>`;
+
+    grid.appendChild(div);
+  }
+}
+
+function selectTable(tid) {
+  const session = state.activeSessions[tid];
+  if (session) {
+    // Select this session to end it
+    state.selectedSession = tid;
+    document.getElementById('form-title').textContent = 'END SESSION — ' + tid;
+    document.getElementById('sel-table').value = tid;
+    document.getElementById('inp-player').value = session.player;
+    document.getElementById('sel-game').value = session.gameType;
+    document.getElementById('sel-rate').value = session.rateType;
+    document.getElementById('inp-rate').value = session.rate;
+    document.getElementById('btn-start').style.display = 'none';
+    document.getElementById('btn-end').style.display = 'block';
+    document.getElementById('btn-cancel').style.display = 'block';
+    renderActiveSessions();
+  } else {
+    document.getElementById('sel-table').value = tid;
+    clearForm(false);
+    document.getElementById('sel-table').value = tid;
+  }
+}
+
+// ══ SESSION FORM ══
+function updateRateDisplay() {}
+
+function startSession() {
+  const tableId = document.getElementById('sel-table').value;
+  const player = document.getElementById('inp-player').value.trim() || 'Guest';
+  const gameType = document.getElementById('sel-game').value;
+  const rateType = document.getElementById('sel-rate').value;
+  const rate = parseFloat(document.getElementById('inp-rate').value) || state.settings.defaultRate;
+
+  if (!tableId) return alert('Select a table.');
+  if (state.activeSessions[tableId]) return alert(tableId + ' already has an active session.');
+
+  state.activeSessions[tableId] = {
+    tableId, player, gameType, rateType, rate,
+    startTime: new Date(),
+    id: Date.now()
+  };
+
+  saveState();
+  clearForm();
+  renderAll();
+}
+
+function endSession() {
+  const tid = state.selectedSession || document.getElementById('sel-table').value;
+  const session = state.activeSessions[tid];
+  if (!session) return alert('No active session on ' + tid);
+
+  const elapsed = getElapsed(session.startTime);
+  const amount = calcAmount(session, elapsed);
+
+  // Show modal
+  document.getElementById('modal-title').textContent = 'CLOSE — ' + tid;
+  document.getElementById('modal-summary').innerHTML = `
+    <div class="summary-row"><span class="summary-label">Player</span><span class="summary-value">${session.player}</span></div>
+    <div class="summary-row"><span class="summary-label">Game</span><span class="summary-value">${session.gameType}</span></div>
+    <div class="summary-row"><span class="summary-label">Start Time</span><span class="summary-value">${session.startTime.toLocaleTimeString()}</span></div>
+    <div class="summary-row"><span class="summary-label">Duration</span><span class="summary-value">${formatTime(elapsed)} (${elapsed} min)</span></div>
+    <div class="summary-row"><span class="summary-label">Rate</span><span class="summary-value">${state.settings.currency}${session.rate} / ${session.rateType.replace('_',' ')}</span></div>
+    <div class="summary-row total"><span class="summary-label">TOTAL</span><span class="summary-value">${state.settings.currency}${amount.toFixed(2)}</span></div>
+  `;
+
+  state._pendingEnd = { tid, elapsed, amount, session: { ...session } };
+  document.getElementById('end-modal').classList.add('open');
+}
+
+function confirmEndSession() {
+  const { tid, elapsed, amount, session } = state._pendingEnd;
+
+  state.completedSessions.push({
+    ...session,
+    endTime: new Date().toISOString(),
+    startTime: session.startTime.toISOString(),
+    duration: elapsed,
+    amount,
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  delete state.activeSessions[tid];
+  state._pendingEnd = null;
+  state.selectedSession = null;
+  closeModal();
+  clearForm();
+  saveState();
+  renderAll();
+}
+
+function closeModal() {
+  document.getElementById('end-modal').classList.remove('open');
+}
+
+function clearForm(resetSelect = true) {
+  state.selectedSession = null;
+  document.getElementById('form-title').textContent = 'START SESSION';
+  if (resetSelect) document.getElementById('sel-table').value = '';
+  document.getElementById('inp-player').value = '';
+  document.getElementById('inp-rate').value = state.settings.defaultRate;
+  document.getElementById('btn-start').style.display = 'block';
+  document.getElementById('btn-end').style.display = 'none';
+  document.getElementById('btn-cancel').style.display = 'none';
+  renderActiveSessions();
+}
+
+// ══ ACTIVE SESSIONS PANEL ══
+function renderActiveSessions() {
+  const container = document.getElementById('sessions-container');
+  const sessions = Object.values(state.activeSessions);
+
+  if (sessions.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:1.5rem;"><div class="empty-text">No active sessions</div></div>';
+    return;
+  }
+
+  container.innerHTML = sessions.map(s => {
+    const elapsed = getElapsed(s.startTime);
+    const amount = calcAmount(s, elapsed);
+    const isSelected = state.selectedSession === s.tableId;
+    return `
+      <div class="session-item ${isSelected ? 'selected' : ''}" onclick="selectTable('${s.tableId}')">
+        <div class="session-item-left">
+          <div class="session-table-name">🎱 ${s.tableId} · ${s.gameType}</div>
+          <div class="session-player">${s.player}</div>
+        </div>
+        <div class="session-item-right">
+          <div class="session-elapsed">${formatTime(elapsed)}</div>
+          <div class="session-accrued">${state.settings.currency}${amount.toFixed(0)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ══ KPIs ══
+function updateKPIs() {
+  const today = new Date().toISOString().split('T')[0];
+  const todaySessions = state.completedSessions.filter(s => s.date === today);
+  const todayRev = todaySessions.reduce((a, s) => a + s.amount, 0);
+  const liveAccrued = Object.values(state.activeSessions).reduce((a, s) => a + calcAmount(s, getElapsed(s.startTime)), 0);
+  const avgDur = todaySessions.length ? Math.round(todaySessions.reduce((a, s) => a + s.duration, 0) / todaySessions.length) : 0;
+  const cur = state.settings.currency;
+
+  document.getElementById('kpi-active').textContent = Object.keys(state.activeSessions).length;
+  document.getElementById('kpi-total').textContent = state.settings.tables;
+  document.getElementById('kpi-revenue').textContent = cur + todayRev.toFixed(0);
+  document.getElementById('kpi-accrued').textContent = cur + liveAccrued.toFixed(0);
+  document.getElementById('kpi-sessions').textContent = todaySessions.length;
+  document.getElementById('kpi-avg').textContent = avgDur;
+}
+
+// ══ TABLE SELECTS ══
+function populateTableSelects() {
+  const sel = document.getElementById('sel-table');
+  const logSel = document.getElementById('log-filter-table');
+  const n = state.settings.tables;
+  const cur = sel.value;
+
+  sel.innerHTML = '<option value="">— Select Table —</option>';
+  logSel.innerHTML = '<option value="">All Tables</option>';
+
+  for (let i = 1; i <= n; i++) {
+    const tid = 'T' + i;
+    const inUse = !!state.activeSessions[tid];
+    sel.innerHTML += `<option value="${tid}" ${inUse ? 'disabled style="color:#555"' : ''} ${cur === tid ? 'selected' : ''}>${tid}${inUse ? ' (In Use)' : ''}</option>`;
+    logSel.innerHTML += `<option value="${tid}">${tid}</option>`;
+  }
+}
+
+// ══ REVENUE VIEW ══
+function renderRevenue() {
+  const cur = state.settings.currency;
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  // Week start (Mon)
+  const dow = now.getDay();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekStr = weekStart.toISOString().split('T')[0];
+
+  // Month start
+  const monthStr = today.slice(0, 7);
+
+  const todaySessions = state.completedSessions.filter(s => s.date === today);
+  const weekSessions = state.completedSessions.filter(s => s.date >= weekStr);
+  const monthSessions = state.completedSessions.filter(s => s.date.startsWith(monthStr));
+
+  document.getElementById('rev-today').textContent = cur + todaySessions.reduce((a, s) => a + s.amount, 0).toFixed(0);
+  document.getElementById('rev-today-sessions').textContent = todaySessions.length + ' sessions';
+  document.getElementById('rev-week').textContent = cur + weekSessions.reduce((a, s) => a + s.amount, 0).toFixed(0);
+  document.getElementById('rev-week-sessions').textContent = weekSessions.length + ' sessions';
+  document.getElementById('rev-month').textContent = cur + monthSessions.reduce((a, s) => a + s.amount, 0).toFixed(0);
+  document.getElementById('rev-month-sessions').textContent = monthSessions.length + ' sessions';
+
+  // Top table
+  const byTable = {};
+  todaySessions.forEach(s => { byTable[s.tableId] = (byTable[s.tableId] || 0) + s.amount; });
+  const topEntry = Object.entries(byTable).sort((a, b) => b[1] - a[1])[0];
+  if (topEntry) {
+    document.getElementById('rev-top-table').textContent = topEntry[0];
+    document.getElementById('rev-top-amount').textContent = cur + topEntry[1].toFixed(0) + ' today';
+  }
+
+  renderBarChart();
+  renderDonut();
+  renderTablePerf();
+}
+
+function renderBarChart() {
+  const cur = state.settings.currency;
+  const chart = document.getElementById('bar-chart');
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+
+  const maxRev = Math.max(...days.map(d => {
+    return state.completedSessions.filter(s => s.date === d).reduce((a, s) => a + s.amount, 0);
+  }), 1);
+
+  chart.innerHTML = days.map(d => {
+    const rev = state.completedSessions.filter(s => s.date === d).reduce((a, s) => a + s.amount, 0);
+    const pct = (rev / maxRev) * 100;
+    const label = new Date(d + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' });
+    const isToday = d === new Date().toISOString().split('T')[0];
+    return `
+      <div class="bar-wrap">
+        <div class="bar" style="height:${Math.max(pct, 2)}%; background: ${isToday ? 'var(--green-bright)' : '#2a3a2e'};">
+          ${rev > 0 ? `<span class="bar-val">${cur}${rev.toFixed(0)}</span>` : ''}
+        </div>
+        <div class="bar-label" style="color:${isToday ? 'var(--green-bright)' : 'var(--text-dim)'}">${label}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderDonut() {
+  const gameTypes = ['8-ball', '9-ball', '10-ball', 'Billiards', 'Snooker'];
+  const colors = ['#2ecc71', '#f0a500', '#3498db', '#e74c3c', '#9b59b6'];
+  const totals = gameTypes.map(g => state.completedSessions.filter(s => s.gameType === g).reduce((a, s) => a + s.amount, 0));
+  const total = totals.reduce((a, b) => a + b, 0);
+  const cur = state.settings.currency;
+
+  if (total === 0) {
+    document.getElementById('donut-svg').innerHTML = `
+      <circle cx="60" cy="60" r="45" fill="none" stroke="#222" stroke-width="18"/>
+      <text x="60" y="65" text-anchor="middle" fill="#6b7280" font-size="11" font-family="DM Mono">No data</text>`;
+    document.getElementById('donut-legend').innerHTML = '';
+    return;
+  }
+
+  const r = 45, cx = 60, cy = 60;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+  let paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1a1a1a" stroke-width="18"/>`;
+
+  totals.forEach((val, i) => {
+    if (val === 0) return;
+    const frac = val / total;
+    const dash = frac * circumference;
+    const gap = circumference - dash;
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="18"
+      stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += dash;
+  });
+
+  paths += `<text x="${cx}" y="${cy-4}" text-anchor="middle" fill="#e8eaf0" font-size="12" font-family="Bebas Neue" letter-spacing="1">${cur}${total.toFixed(0)}</text>
+            <text x="${cx}" y="${cy+12}" text-anchor="middle" fill="#6b7280" font-size="9" font-family="DM Mono">TOTAL</text>`;
+
+  document.getElementById('donut-svg').innerHTML = paths;
+
+  document.getElementById('donut-legend').innerHTML = gameTypes.map((g, i) => {
+    if (totals[i] === 0) return '';
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i]}"></div>
+      <span class="legend-label">${g}</span>
+      <span class="legend-val">${cur}${totals[i].toFixed(0)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTablePerf() {
+  const cur = state.settings.currency;
+  const n = state.settings.tables;
+  const today = new Date().toISOString().split('T')[0];
+  const rows = [];
+
+  for (let i = 1; i <= n; i++) {
+    const tid = 'T' + i;
+    const sessions = state.completedSessions.filter(s => s.tableId === tid);
+    const todaySessions = sessions.filter(s => s.date === today);
+    const totalRev = sessions.reduce((a, s) => a + s.amount, 0);
+    const todayRev = todaySessions.reduce((a, s) => a + s.amount, 0);
+    const avgDur = sessions.length ? Math.round(sessions.reduce((a, s) => a + s.duration, 0) / sessions.length) : 0;
+    rows.push({ tid, total: sessions.length, todayRev, totalRev, avgDur });
+  }
+
+  rows.sort((a, b) => b.totalRev - a.totalRev);
+
+  document.getElementById('table-perf').innerHTML = `
+    <thead>
+      <tr>
+        <th>Table</th>
+        <th>Total Sessions</th>
+        <th>Avg Duration</th>
+        <th>Today Revenue</th>
+        <th>All-Time Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map((r, idx) => `
+        <tr>
+          <td style="font-family:var(--font-mono); font-weight:600;">${r.tid}</td>
+          <td><span class="badge badge-green">${r.total}</span></td>
+          <td style="font-family:var(--font-mono)">${r.avgDur ? r.avgDur + ' min' : '—'}</td>
+          <td style="font-family:var(--font-mono); color:var(--amber)">${cur}${r.todayRev.toFixed(0)}</td>
+          <td style="font-family:var(--font-mono); color:var(--green-bright)">${cur}${r.totalRev.toFixed(0)}</td>
+        </tr>`).join('')}
+    </tbody>`;
+}
+
+// ══ LOG VIEW ══
+function renderLog() {
+  const tbody = document.getElementById('log-tbody');
+  const filterTable = document.getElementById('log-filter-table').value;
+  const filterGame = document.getElementById('log-filter-game').value;
+  const filterDate = document.getElementById('log-filter-date').value;
+  const cur = state.settings.currency;
+
+  let sessions = [...state.completedSessions].reverse();
+  if (filterTable) sessions = sessions.filter(s => s.tableId === filterTable);
+  if (filterGame) sessions = sessions.filter(s => s.gameType === filterGame);
+  if (filterDate) sessions = sessions.filter(s => s.date === filterDate);
+
+  if (sessions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">No sessions found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sessions.map((s, i) => {
+    const startDt = new Date(s.startTime);
+    return `
+      <tr>
+        <td style="color:var(--text-muted); font-family:var(--font-mono)">${sessions.length - i}</td>
+        <td style="font-family:var(--font-mono); font-size:12px">${startDt.toLocaleDateString()} ${startDt.toLocaleTimeString()}</td>
+        <td style="font-weight:600">${s.tableId}</td>
+        <td>${s.player}</td>
+        <td><span class="badge badge-amber">${s.gameType}</span></td>
+        <td style="font-family:var(--font-mono)">${formatTime(s.duration)}</td>
+        <td style="font-family:var(--font-mono); font-size:12px">${cur}${s.rate}/${s.rateType.replace('_',' ')}</td>
+        <td style="font-family:var(--font-mono); color:var(--green-bright); font-weight:600">${cur}${s.amount.toFixed(2)}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ══ UTILS ══
+function getElapsed(startTime) {
+  // Returns minutes elapsed
+  return Math.floor((Date.now() - new Date(startTime).getTime()) / 60000);
+}
+
+function calcAmount(session, elapsedMinutes) {
+  if (session.rateType === 'per_hour') {
+    return (elapsedMinutes / 60) * session.rate;
+  } else if (session.rateType === 'per_game') {
+    return session.rate; // flat per game
+  } else {
+    return session.rate; // flat rate
+  }
+}
+
+function formatTime(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return (h > 0 ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(0).padStart(2, '0');
+}
+
+// Better seconds-based timer
+setInterval(() => {
+  // Recompute with seconds precision for timer display
+  const grids = document.querySelectorAll('.table-timer');
+  // handled in renderFloorTables
+}, 1000);
+
+// Override formatTime to include seconds
+function formatTimeFull(startTime) {
+  const totalSec = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return (h > 0 ? h + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+// Re-render floor with seconds
+setInterval(() => {
+  // Update timers in grid directly for performance
+  const grid = document.getElementById('tables-grid');
+  if (!grid) return;
+  const cells = grid.querySelectorAll('.pool-table.occupied');
+  cells.forEach(cell => {
+    const numEl = cell.querySelector('.table-num');
+    if (!numEl) return;
+    const num = parseInt(numEl.textContent);
+    const tid = 'T' + num;
+    const session = state.activeSessions[tid];
+    if (!session) return;
+    const timer = cell.querySelector('.table-timer');
+    const accrued = cell.querySelector('.table-rate');
+    if (timer) timer.textContent = formatTimeFull(session.startTime);
+    if (accrued) {
+      const elapsed = getElapsed(session.startTime);
+      accrued.textContent = state.settings.currency + calcAmount(session, elapsed).toFixed(0) + ' accrued';
+    }
+    const sessions = cell.querySelectorAll('.session-elapsed');
+  });
+  renderActiveSessions();
+  updateKPIs();
+}, 1000);
+</script>
+
+</body>
+</html>
