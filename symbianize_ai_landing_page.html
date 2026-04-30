@@ -1,0 +1,153 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--brand:#1D9E75;--brand-light:#E1F5EE;--brand-dark:#085041;
+--accent:#7F77DD;--accent-light:#EEEDFE;
+--ink:var(--color-text-primary);--muted:var(--color-text-secondary);--hint:var(--color-text-tertiary);
+--surf:var(--color-background-primary);--surf2:var(--color-background-secondary);--surf3:var(--color-background-tertiary);
+--br:var(--border-radius-lg);--brs:var(--border-radius-md);
+--bd:0.5px solid var(--color-border-tertiary);--bdh:0.5px solid var(--color-border-secondary);
+}
+.frame{background:var(--surf3);border-radius:var(--border-radius-lg);overflow:hidden;border:var(--bd)}
+.nav{background:var(--surf);border-bottom:var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:48px}
+.logo{font-size:15px;font-weight:500;color:var(--ink);letter-spacing:-0.3px}
+.logo span{color:var(--brand)}
+.nav-links{display:flex;gap:20px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;cursor:pointer}
+.nav-links a:hover{color:var(--ink)}
+.nav-right{display:flex;gap:8px;align-items:center}
+.btn-ghost{font-size:12px;padding:5px 12px;border-radius:var(--brs);border:var(--bd);background:transparent;color:var(--muted);cursor:pointer}
+.btn-ghost:hover{background:var(--surf2);color:var(--ink)}
+.btn-brand{font-size:12px;padding:5px 12px;border-radius:var(--brs);border:none;background:var(--brand);color:#fff;cursor:pointer;font-weight:500}
+.btn-brand:hover{background:var(--brand-dark)}
+.hero{padding:40px 24px 32px;text-align:center;background:var(--surf)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--brand-light);color:var(--brand-dark);font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;margin-bottom:16px}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.hero h1{font-size:26px;font-weight:500;color:var(--ink);line-height:1.25;letter-spacing:-0.5px;max-width:480px;margin:0 auto 12px}
+.hero h1 em{color:var(--brand);font-style:normal}
+.hero p{font-size:13px;color:var(--muted);max-width:360px;margin:0 auto 24px;line-height:1.6}
+.hero-cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-hero{font-size:13px;padding:9px 20px;border-radius:var(--brs);border:none;background:var(--brand);color:#fff;cursor:pointer;font-weight:500}
+.btn-hero:hover{background:var(--brand-dark)}
+.btn-hero-ghost{font-size:13px;padding:9px 20px;border-radius:var(--brs);border:var(--bdh);background:transparent;color:var(--ink);cursor:pointer}
+.btn-hero-ghost:hover{background:var(--surf2)}
+.stats-row{display:flex;justify-content:center;gap:32px;padding:20px 24px;border-top:var(--bd);border-bottom:var(--bd);background:var(--surf2)}
+.stat{text-align:center}
+.stat-num{font-size:18px;font-weight:500;color:var(--ink)}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+.section{padding:24px}
+.section-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.feat-card{background:var(--surf);border:var(--bd);border-radius:var(--br);padding:14px}
+.feat-card:hover{border-color:var(--color-border-secondary)}
+.feat-icon{width:28px;height:28px;border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:center}
+.feat-title{font-size:12px;font-weight:500;color:var(--ink);margin-bottom:4px}
+.feat-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.threads-preview{background:var(--surf3);padding:16px 24px;border-top:var(--bd)}
+.thread-row{background:var(--surf);border:var(--bd);border-radius:var(--brs);padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.thread-row:hover{border-color:var(--color-border-secondary)}
+.thread-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0}
+.thread-body{flex:1;min-width:0}
+.thread-title{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thread-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.thread-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
+.ai-badge{background:#EEEDFE;color:#3C3489}
+.hot-badge{background:#FAECE7;color:#712B13}
+.new-badge{background:#E1F5EE;color:#085041}
+.cta-banner{background:var(--brand-light);border-top:var(--bd);padding:20px 24px;text-align:center}
+.cta-banner p{font-size:13px;color:var(--brand-dark);margin-bottom:12px}
+</style>
+
+<div class="frame">
+  <nav class="nav">
+    <div class="logo">Symbianize<span>-AI</span></div>
+    <div class="nav-links">
+      <a onclick="sendPrompt('Show me the Forum wireframe for Symbianize-AI')">Forum</a>
+      <a onclick="sendPrompt('Show me the AI Assistant wireframe for Symbianize-AI')">AI Tools</a>
+      <a>Knowledge</a>
+      <a>Leaderboard</a>
+    </div>
+    <div class="nav-right">
+      <button class="btn-ghost">Log in</button>
+      <button class="btn-brand" onclick="sendPrompt('Design the signup flow for Symbianize-AI')">Join free</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-badge"><div class="hero-badge-dot"></div> Pinoy AI community · v2.0</div>
+    <h1>The <em>smarter</em> Filipino tech community</h1>
+    <p>AI-powered answers, smart search, and a community that levels up with you. Symbianize — rebuilt for the AI era.</p>
+    <div class="hero-cta">
+      <button class="btn-hero" onclick="sendPrompt('Show me the Forum wireframe for Symbianize-AI')">Explore the forum</button>
+      <button class="btn-hero-ghost" onclick="sendPrompt('Show me the AI Assistant wireframe for Symbianize-AI')">Try AI assistant</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num">2.4M+</div><div class="stat-label">Community members</div></div>
+    <div class="stat"><div class="stat-num">18M+</div><div class="stat-label">Threads answered</div></div>
+    <div class="stat"><div class="stat-num">98%</div><div class="stat-label">AI answer accuracy</div></div>
+    <div class="stat"><div class="stat-num">2006</div><div class="stat-label">Est. by Pinoys</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">What's new</div>
+    <div class="feat-grid">
+      <div class="feat-card" onclick="sendPrompt('Explain the AI Answer Bot feature in Symbianize-AI')">
+        <div class="feat-icon" style="background:#E1F5EE">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="9" rx="2" stroke="#0F6E56" stroke-width="1.2"/><path d="M5 13h6M8 11v2" stroke="#0F6E56" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feat-title">AI answer bot</div>
+        <div class="feat-desc">Instant, sourced answers from 18M+ threads using RAG</div>
+      </div>
+      <div class="feat-card" onclick="sendPrompt('Explain the semantic search feature in Symbianize-AI')">
+        <div class="feat-icon" style="background:#EEEDFE">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#534AB7" stroke-width="1.2"/><path d="M10.5 10.5L13 13" stroke="#534AB7" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="feat-title">Semantic search</div>
+        <div class="feat-desc">Find answers by meaning, not just keywords</div>
+      </div>
+      <div class="feat-card" onclick="sendPrompt('Explain the XP and leaderboard system in Symbianize-AI')">
+        <div class="feat-icon" style="background:#FAEEDA">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10l-3 2 .5-3.5L3 6l3.5-.5L8 2z" stroke="#854F0B" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="feat-title">XP + leaderboard</div>
+        <div class="feat-desc">Earn points, badges, and community rank</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="threads-preview">
+    <div class="section-label">Trending now</div>
+    <div class="thread-row" onclick="sendPrompt('Show me the Thread View wireframe for Symbianize-AI')">
+      <div class="thread-avatar" style="background:#E1F5EE;color:#0F6E56">JD</div>
+      <div class="thread-body">
+        <div class="thread-title">Paano mag-setup ng Starlink sa probinsya? Step-by-step guide</div>
+        <div class="thread-meta">Network · 142 replies · 4.2k views</div>
+      </div>
+      <span class="thread-badge hot-badge">Hot</span>
+    </div>
+    <div class="thread-row" onclick="sendPrompt('Show me the Thread View wireframe for Symbianize-AI')">
+      <div class="thread-avatar" style="background:#EEEDFE;color:#534AB7">MR</div>
+      <div class="thread-body">
+        <div class="thread-title">Best budget laptop 2025 para sa students — AI-curated list</div>
+        <div class="thread-meta">Laptops · 87 replies · 2.8k views</div>
+      </div>
+      <span class="thread-badge ai-badge">AI picks</span>
+    </div>
+    <div class="thread-row" onclick="sendPrompt('Show me the Thread View wireframe for Symbianize-AI')">
+      <div class="thread-avatar" style="background:#FAEEDA;color:#854F0B">AL</div>
+      <div class="thread-body">
+        <div class="thread-title">GCash vs Maya vs UnionBank — complete comparison 2025</div>
+        <div class="thread-meta">Finance · 34 replies · 1.1k views</div>
+      </div>
+      <span class="thread-badge new-badge">New</span>
+    </div>
+  </div>
+
+  <div class="cta-banner">
+    <p>Sumali na sa pinakamalaking AI-powered Pinoy tech community</p>
+    <button class="btn-hero" onclick="sendPrompt('Design the signup and onboarding flow for Symbianize-AI')">Create free account ↗</button>
+  </div>
+</div>
