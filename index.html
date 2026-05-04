@@ -1,0 +1,350 @@
+import { useState } from “react”;
+
+const systems = [
+{
+id: 1,
+tier: “TIER 1”,
+label: “Solo Operator”,
+capital: “$0–$50”,
+timeline: “Week 1”,
+name: “AI Micro-Agency”,
+tagline: “Claude does the work. You deliver.”,
+color: “#00FF94”,
+income: “$500–$3K/mo”,
+stack: [“Claude API”, “Cowork”, “Gumroad / Contra”],
+model: “Service → Retainer”,
+steps: [
+“Pick ONE niche: landing pages, email sequences, SOP docs, pitch decks”,
+“Use Claude to deliver 10× faster than any human agency”,
+“Price at $150–$500/project. Sell on Fiverr Pro, Contra, or cold DM”,
+“Automate with Claude + Cowork for zero-touch delivery”,
+],
+risk: “Low”,
+moat: “Speed + quality combo undercutting agencies”,
+},
+{
+id: 2,
+tier: “TIER 2”,
+label: “Product Builder”,
+capital: “$50–$200”,
+timeline: “Week 2–4”,
+name: “AI-Powered Digital Products”,
+tagline: “Build once. Sell forever.”,
+color: “#FFD700”,
+income: “$1K–$10K/mo”,
+stack: [“Claude”, “Next.js”, “Gumroad / Lemon Squeezy”],
+model: “One-time + Subscription”,
+steps: [
+“Identify a pain: niche templates, AI prompt packs, industry playbooks”,
+“Use Claude to generate the content at 10× speed”,
+“Package as PDF / Notion / App — sell on Gumroad or own site”,
+“Add AI-powered upsell: custom version generator via Claude API”,
+],
+risk: “Low–Medium”,
+moat: “Niche specificity + instant delivery”,
+},
+{
+id: 3,
+tier: “TIER 3”,
+label: “SaaS Founder”,
+capital: “$200–$1K”,
+timeline: “Month 1–3”,
+name: “Vertical AI SaaS”,
+tagline: “Claude as your backend brain.”,
+color: “#FF6B35”,
+income: “$3K–$30K/mo MRR”,
+stack: [“Claude API”, “Next.js”, “Supabase”, “Stripe”],
+model: “Subscription / Usage-based”,
+steps: [
+“Target a vertical: legal, medical, HR, real estate, education”,
+“Wrap Claude API with a focused UI solving ONE specific workflow”,
+“Charge $29–$199/mo per seat or per usage credit”,
+“Use Cowork to automate onboarding, support, and delivery”,
+],
+risk: “Medium”,
+moat: “Vertical lock-in + workflow integration”,
+},
+{
+id: 4,
+tier: “TIER 4”,
+label: “Agency at Scale”,
+capital: “$500–$2K”,
+timeline: “Month 2–6”,
+name: “AI Design + Code Studio”,
+tagline: “Code. Design. Deploy. Repeat.”,
+color: “#A78BFA”,
+income: “$10K–$50K/mo”,
+stack: [“Claude”, “Cowork”, “GitHub”, “Vercel”, “Figma”],
+model: “Project + Retainer”,
+steps: [
+“Offer full-stack: design system → code → deployment pipeline”,
+“Claude writes components, Cowork handles client comms + delivery”,
+“Use GitHub for version control, Vercel for instant deploys”,
+“Package as monthly retainer: $2K–$5K/client for ongoing builds”,
+],
+risk: “Medium”,
+moat: “Full-stack delivery at agency speed with 2-person team”,
+},
+{
+id: 5,
+tier: “TIER 5”,
+label: “Platform Builder”,
+capital: “$2K–$10K”,
+timeline: “Month 3–12”,
+name: “AI App Factory”,
+tagline: “Build AI apps on demand. License the system.”,
+color: “#38BDF8”,
+income: “$20K–$100K+/mo”,
+stack: [“Claude API”, “Next.js”, “Docker”, “Supabase”, “Stripe”],
+model: “Licensing + Revenue Share”,
+steps: [
+“Build a repeatable SOP: ideate → build → launch in 7 days”,
+“Productize the factory itself — sell access to the system”,
+“Launch 1 app/month. Each becomes a recurring revenue stream”,
+“License the methodology to other builders at $1K–$5K/seat”,
+],
+risk: “High → High Reward”,
+moat: “System + portfolio compounding”,
+},
+];
+
+const riskColor = {
+Low: “#00FF94”,
+“Low–Medium”: “#FFD700”,
+Medium: “#FF6B35”,
+“Medium”: “#FF6B35”,
+“High → High Reward”: “#FF3864”,
+};
+
+export default function AiMoneyMachine() {
+const [active, setActive] = useState(0);
+const sys = systems[active];
+
+return (
+<div style={{
+minHeight: “100vh”,
+background: “#0A0A0F”,
+fontFamily: “‘Courier New’, monospace”,
+color: “#E2E8F0”,
+padding: “0”,
+overflow: “hidden”,
+}}>
+{/* Header */}
+<div style={{
+borderBottom: “1px solid #1E293B”,
+padding: “20px 32px”,
+display: “flex”,
+alignItems: “center”,
+justifyContent: “space-between”,
+background: “rgba(255,255,255,0.02)”,
+}}>
+<div>
+<div style={{ fontSize: “11px”, color: “#64748B”, letterSpacing: “4px”, marginBottom: “4px” }}>
+STRATEGIX AI // MONEY ENGINE v2.0
+</div>
+<div style={{ fontSize: “22px”, fontWeight: “700”, color: “#F1F5F9”, letterSpacing: “-0.5px” }}>
+Claude × Code × Design × Cowork
+</div>
+</div>
+<div style={{
+background: “#00FF9420”,
+border: “1px solid #00FF9440”,
+borderRadius: “4px”,
+padding: “6px 14px”,
+fontSize: “11px”,
+color: “#00FF94”,
+letterSpacing: “2px”,
+}}>
+● LIVE SYSTEM
+</div>
+</div>
+
+```
+  <div style={{ display: "flex", height: "calc(100vh - 73px)" }}>
+    {/* Left sidebar — tier selector */}
+    <div style={{
+      width: "220px",
+      borderRight: "1px solid #1E293B",
+      display: "flex",
+      flexDirection: "column",
+      padding: "16px 0",
+      gap: "4px",
+      overflowY: "auto",
+    }}>
+      {systems.map((s, i) => (
+        <button
+          key={s.id}
+          onClick={() => setActive(i)}
+          style={{
+            background: active === i ? `${s.color}15` : "transparent",
+            border: "none",
+            borderLeft: active === i ? `3px solid ${s.color}` : "3px solid transparent",
+            padding: "14px 20px",
+            textAlign: "left",
+            cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+        >
+          <div style={{ fontSize: "9px", color: active === i ? s.color : "#475569", letterSpacing: "3px", marginBottom: "4px" }}>
+            {s.tier}
+          </div>
+          <div style={{ fontSize: "13px", color: active === i ? "#F1F5F9" : "#64748B", fontWeight: "600" }}>
+            {s.label}
+          </div>
+          <div style={{ fontSize: "11px", color: active === i ? s.color : "#334155", marginTop: "2px" }}>
+            {s.income}
+          </div>
+        </button>
+      ))}
+    </div>
+
+    {/* Main panel */}
+    <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
+      {/* Title block */}
+      <div style={{ marginBottom: "28px" }}>
+        <div style={{
+          fontSize: "10px",
+          letterSpacing: "4px",
+          color: sys.color,
+          marginBottom: "8px",
+        }}>
+          {sys.tier} // {sys.capital} CAPITAL // {sys.timeline}
+        </div>
+        <div style={{ fontSize: "30px", fontWeight: "800", color: "#F8FAFC", marginBottom: "6px", letterSpacing: "-1px" }}>
+          {sys.name}
+        </div>
+        <div style={{ fontSize: "15px", color: "#94A3B8" }}>{sys.tagline}</div>
+      </div>
+
+      {/* KPI row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "28px" }}>
+        {[
+          { label: "INCOME TARGET", value: sys.income, c: sys.color },
+          { label: "RISK LEVEL", value: sys.risk, c: riskColor[sys.risk] || "#FF6B35" },
+          { label: "BUSINESS MODEL", value: sys.model, c: "#94A3B8" },
+        ].map((k) => (
+          <div key={k.label} style={{
+            background: "#0F172A",
+            border: "1px solid #1E293B",
+            borderRadius: "8px",
+            padding: "16px 20px",
+          }}>
+            <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#475569", marginBottom: "8px" }}>{k.label}</div>
+            <div style={{ fontSize: "16px", fontWeight: "700", color: k.c }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Stack */}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#475569", marginBottom: "12px" }}>TECH STACK</div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {sys.stack.map((t) => (
+            <span key={t} style={{
+              background: `${sys.color}15`,
+              border: `1px solid ${sys.color}30`,
+              color: sys.color,
+              fontSize: "11px",
+              padding: "4px 12px",
+              borderRadius: "3px",
+              letterSpacing: "1px",
+            }}>
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Execution Steps */}
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#475569", marginBottom: "16px" }}>EXECUTION STEPS</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {sys.steps.map((step, i) => (
+            <div key={i} style={{
+              display: "flex",
+              gap: "16px",
+              background: "#0F172A",
+              border: "1px solid #1E293B",
+              borderRadius: "6px",
+              padding: "14px 18px",
+              alignItems: "flex-start",
+            }}>
+              <div style={{
+                minWidth: "24px",
+                height: "24px",
+                borderRadius: "50%",
+                background: `${sys.color}20`,
+                border: `1px solid ${sys.color}`,
+                color: sys.color,
+                fontSize: "11px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "700",
+              }}>
+                {i + 1}
+              </div>
+              <div style={{ fontSize: "13px", color: "#CBD5E1", lineHeight: "1.6" }}>{step}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Moat */}
+      <div style={{
+        background: `${sys.color}08`,
+        border: `1px solid ${sys.color}25`,
+        borderRadius: "8px",
+        padding: "18px 22px",
+      }}>
+        <div style={{ fontSize: "9px", letterSpacing: "3px", color: sys.color, marginBottom: "8px" }}>COMPETITIVE MOAT</div>
+        <div style={{ fontSize: "14px", color: "#E2E8F0" }}>{sys.moat}</div>
+      </div>
+    </div>
+
+    {/* Right panel — summary */}
+    <div style={{
+      width: "220px",
+      borderLeft: "1px solid #1E293B",
+      padding: "24px 18px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+    }}>
+      <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#475569" }}>ALL TIERS SUMMARY</div>
+      {systems.map((s, i) => (
+        <div
+          key={s.id}
+          onClick={() => setActive(i)}
+          style={{
+            cursor: "pointer",
+            padding: "10px",
+            borderRadius: "6px",
+            background: active === i ? "#1E293B" : "transparent",
+            transition: "all 0.15s",
+          }}
+        >
+          <div style={{ fontSize: "10px", color: s.color, letterSpacing: "2px", marginBottom: "3px" }}>{s.tier}</div>
+          <div style={{ fontSize: "12px", color: "#94A3B8", marginBottom: "3px" }}>{s.name}</div>
+          <div style={{ fontSize: "13px", fontWeight: "700", color: s.color }}>{s.income}</div>
+        </div>
+      ))}
+
+      <div style={{
+        marginTop: "auto",
+        background: "#0F172A",
+        border: "1px solid #1E293B",
+        borderRadius: "6px",
+        padding: "14px",
+      }}>
+        <div style={{ fontSize: "9px", letterSpacing: "3px", color: "#475569", marginBottom: "8px" }}>TOTAL POTENTIAL</div>
+        <div style={{ fontSize: "20px", fontWeight: "800", color: "#00FF94" }}>$100K+</div>
+        <div style={{ fontSize: "10px", color: "#64748B", marginTop: "4px" }}>per month at full stack</div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+);
+}
